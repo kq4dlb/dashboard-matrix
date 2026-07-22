@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Dashboard Matrix Exchange Package",
+  "type": "object",
+  "required": ["id", "name", "kind", "version", "download_url", "sha256"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+    "name": {"type": "string"},
+    "kind": {"enum": ["plugin", "theme", "map-provider"]},
+    "version": {"type": "string"},
+    "description": {"type": "string"},
+    "author": {"type": "string"},
+    "download_url": {"type": "string", "format": "uri"},
+    "sha256": {"type": "string", "pattern": "^[a-fA-F0-9]{64}$"},
+    "min_dashboard_matrix_version": {"type": "string"},
+    "tags": {"type": "array", "items": {"type": "string"}}
+  },
+  "additionalProperties": true
+}

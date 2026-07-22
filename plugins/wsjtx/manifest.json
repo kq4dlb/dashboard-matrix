@@ -1,0 +1,35 @@
+{
+  "id": "wsjtx",
+  "name": "WSJT-X",
+  "version": "1.0.0",
+  "author": "Dashboard Matrix Project",
+  "description": "Displays WSJT-X status captured by the included UDP listener service.",
+  "settings_schema": {
+    "type": "object",
+    "properties": {
+      "status_file": {
+        "type": "string",
+        "default": "data/wsjtx_status.json"
+      },
+      "stale_seconds": {
+        "type": "integer",
+        "default": 30
+      }
+    }
+  },
+  "widgets": [
+    {
+      "id": "status",
+      "name": "WSJT-X Status",
+      "description": "Frequency, mode, TX/RX state, DX call and grid",
+      "module": "plugin.py",
+      "default_width": 2,
+      "default_height": 2,
+      "refresh_seconds": 2
+    }
+  ],
+  "permissions": [
+    "filesystem"
+  ],
+  "secrets": []
+}

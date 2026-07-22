@@ -1,0 +1,33 @@
+{
+  "id": "station-tools",
+  "name": "Station Tools",
+  "version": "1.0.0",
+  "author": "Dashboard Matrix Project",
+  "description": "Station identity and location widgets using the shared Dashboard Matrix station profile.",
+  "settings_schema": {
+    "type": "object",
+    "properties": {}
+  },
+  "widgets": [
+    {
+      "id": "station-card",
+      "name": "Station Identity",
+      "description": "Callsign, grid and coordinates",
+      "module": "plugin.py",
+      "default_width": 2,
+      "default_height": 1,
+      "refresh_seconds": 60
+    },
+    {
+      "id": "coordinate-card",
+      "name": "Station Coordinates",
+      "description": "Location details for integrations",
+      "module": "plugin.py",
+      "default_width": 1,
+      "default_height": 1,
+      "refresh_seconds": 300
+    }
+  ],
+  "permissions": [],
+  "secrets": []
+}

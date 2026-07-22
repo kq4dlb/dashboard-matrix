@@ -1,0 +1,29 @@
+name: Raspberry Pi image
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build-install-bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - run: tar --exclude=.git -czf dashboard-matrix-rpi-install.tar.gz .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dashboard-matrix-rpi-install
+          path: dashboard-matrix-rpi-install.tar.gz
+  build-image:
+    if: ${{ vars.ENABLE_RPI_IMAGE_BUILD == 'true' }}
+    runs-on: [self-hosted, Linux, ARM64, raspberry-pi]
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build and customize image
+        env:
+          RPI_IMAGE_GEN_HOME: ${{ vars.RPI_IMAGE_GEN_HOME }}
+          RPI_IMAGE_CONFIG: ${{ vars.RPI_IMAGE_CONFIG }}
+        run: ./scripts/build-raspberry-pi-image.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dashboard-matrix-raspberry-pi-image
+          path: dist/raspberry-pi/*

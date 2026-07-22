@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#071525">
+  <title>Set up Dashboard Matrix</title>
+  <link rel="icon" href="/static/img/dashboard-matrix-mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/css/dashboard.css">
+</head>
+<body class="setup-shell">
+<main class="setup-wrap">
+  <section class="panel setup-panel">
+    <img class="setup-logo" src="/static/img/dashboard-matrix-logo.svg" alt="KQ4DLB Dashboard Matrix">
+    <p class="eyebrow">First-run setup</p>
+    <h1>Build your first dashboard</h1>
+    <p class="help">Choose a starter layout, set the local administrator password, and establish the station or site identity used by dashboard placeholders.</p>
+
+    <form id="setup-form">
+      <div class="form-grid">
+        <label>Display name
+          <input id="setup-display-name" value="Dashboard Matrix" required maxlength="120">
+        </label>
+        <label>Callsign or short identifier
+          <input id="setup-callsign" value="N0CALL" required maxlength="12">
+        </label>
+        <label>Six-character grid square
+          <input id="setup-grid" value="AA00aa" required pattern="[A-Ra-r]{2}[0-9]{2}[A-Xa-x]{2}">
+        </label>
+        <label>Default theme
+          <select id="setup-theme">
+            <option value="matrix-dark">Matrix Dark</option>
+            <option value="matrix-light">Matrix Light</option>
+          </select>
+        </label>
+        <label>Release channel
+          <select id="setup-channel">
+            <option value="stable">Stable</option>
+            <option value="beta" selected>Beta</option>
+            <option value="nightly">Nightly</option>
+          </select>
+        </label>
+      </div>
+
+      <fieldset>
+        <legend>Starter dashboard</legend>
+        <div id="setup-templates" class="template-choice-grid"></div>
+      </fieldset>
+
+      <div class="form-grid">
+        <label>Administrator password
+          <input id="setup-password" type="password" minlength="8" required autocomplete="new-password">
+        </label>
+        <label>Confirm password
+          <input id="setup-password-confirm" type="password" minlength="8" required autocomplete="new-password">
+        </label>
+      </div>
+      <button type="submit">Create Dashboard Matrix</button>
+      <p id="setup-message" class="help" aria-live="polite"></p>
+    </form>
+  </section>
+</main>
+<script src="/static/js/setup.js" defer></script>
+</body>
+</html>

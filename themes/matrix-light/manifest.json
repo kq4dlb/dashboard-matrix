@@ -1,0 +1,9 @@
+{
+  "id": "matrix-light",
+  "name": "Matrix Light",
+  "version": "0.1.0",
+  "author": "Dashboard Matrix Project",
+  "description": "A bright, low-glare light package demonstrating the Theme SDK.",
+  "color_scheme": "light",
+  "stylesheet": "theme.css"
+}

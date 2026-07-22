@@ -1,0 +1,15 @@
+:root {
+  color-scheme: dark;
+  --matrix-bg: #090d12;
+  --matrix-header: #101820;
+  --matrix-sidebar: #0c131a;
+  --panel: #151b22;
+  --panel-header: #1d2630;
+  --border: #34404c;
+  --text: #edf4fa;
+  --muted: #9cadba;
+  --accent: #63c7ff;
+  --button-bg: #243140;
+  --input-bg: #0e141b;
+  --shadow: #0008;
+}

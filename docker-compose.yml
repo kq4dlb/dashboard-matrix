@@ -1,0 +1,13 @@
+services:
+  dashboard-matrix:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      DASHBOARD_MATRIX_ADMIN_PASSWORD: ${DASHBOARD_MATRIX_ADMIN_PASSWORD:-admin}
+      DASHBOARD_MATRIX_SESSION_SECRET: ${DASHBOARD_MATRIX_SESSION_SECRET:-change-this-before-public-use}
+    volumes:
+      - dashboard-matrix-data:/var/lib/dashboard-matrix
+    restart: unless-stopped
+volumes:
+  dashboard-matrix-data:

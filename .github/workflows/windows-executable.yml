@@ -1,0 +1,52 @@
+name: Windows executable
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: pip install -r requirements.txt pyinstaller
+      - run: pyinstaller --clean --noconfirm dashboard-matrix.spec
+      - name: Package Windows bundle
+        shell: pwsh
+        run: |
+          $version = if ("${{ github.ref_type }}" -eq "tag") {
+            "${{ github.ref_name }}"
+          } else {
+            "v0.1.0-beta-build.${{ github.run_number }}"
+          }
+          New-Item -ItemType Directory -Force release | Out-Null
+          Copy-Item dist/dashboard-matrix.exe release/dashboard-matrix.exe
+          Copy-Item README.md, LICENSE, RELEASE_NOTES.md release/
+          Compress-Archive -Path release/* -DestinationPath "Dashboard-Matrix-Windows-x64-$version.zip" -Force
+          (Get-FileHash "Dashboard-Matrix-Windows-x64-$version.zip" -Algorithm SHA256).Hash.ToLower() + "  Dashboard-Matrix-Windows-x64-$version.zip" | Set-Content "Dashboard-Matrix-Windows-x64-$version.sha256"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dashboard-matrix-windows-x64
+          path: |
+            Dashboard-Matrix-Windows-x64-*.zip
+            Dashboard-Matrix-Windows-x64-*.sha256
+      - name: Attach bundle to GitHub release
+        if: github.ref_type == 'tag'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "${{ github.ref_name }}" *> $null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create "${{ github.ref_name }}" --title "Dashboard Matrix ${{ github.ref_name }}" --generate-notes --prerelease
+          }
+          gh release upload "${{ github.ref_name }}" Dashboard-Matrix-Windows-x64-*.zip Dashboard-Matrix-Windows-x64-*.sha256 --clobber

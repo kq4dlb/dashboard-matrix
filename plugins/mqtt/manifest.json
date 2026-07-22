@@ -1,0 +1,56 @@
+{
+  "id": "mqtt",
+  "name": "MQTT Monitor",
+  "version": "1.0.0",
+  "author": "Dashboard Matrix Project",
+  "description": "Displays station, sensor, battery, radio or automation values from an MQTT broker. Requires optional paho-mqtt.",
+  "settings_schema": {
+    "type": "object",
+    "properties": {
+      "host": {
+        "type": "string",
+        "default": "127.0.0.1"
+      },
+      "port": {
+        "type": "integer",
+        "default": 1883
+      },
+      "username": {
+        "type": "string"
+      },
+      "password": {
+        "type": "string"
+      },
+      "topic": {
+        "type": "string",
+        "default": "station/status"
+      },
+      "timeout": {
+        "type": "number",
+        "default": 3
+      }
+    }
+  },
+  "widgets": [
+    {
+      "id": "topic-value",
+      "name": "MQTT Topic",
+      "description": "Most recent value from a configured topic",
+      "module": "plugin.py",
+      "default_width": 2,
+      "default_height": 1,
+      "refresh_seconds": 5
+    }
+  ],
+  "permissions": [
+    "local-network",
+    "secrets"
+  ],
+  "secrets": [
+    {
+      "name": "password",
+      "description": "MQTT broker password",
+      "required": false
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+:root {
+  color-scheme: light;
+  --matrix-bg: #eef3f7;
+  --matrix-header: #ffffff;
+  --matrix-sidebar: #f8fafc;
+  --panel: #ffffff;
+  --panel-header: #edf3f7;
+  --border: #b9c7d1;
+  --text: #17222b;
+  --muted: #526674;
+  --accent: #006fa6;
+  --button-bg: #e4edf3;
+  --input-bg: #ffffff;
+  --shadow: #4055662b;
+  --ok: #1b7f45;
+  --warn: #9a6700;
+  --bad: #b42318;
+}
+html, body { background: var(--matrix-bg) !important; color: var(--text) !important; }
+.tile iframe, .tile img { background: #fff; }

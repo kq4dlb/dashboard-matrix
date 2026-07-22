@@ -1,0 +1,67 @@
+{
+  "id": "noaa-space-weather",
+  "name": "NOAA Space Weather",
+  "version": "2.0.0",
+  "author": "Dashboard Matrix Project",
+  "description": "Native NOAA SWPC widgets using official JSON data services instead of blocked website iframes.",
+  "widgets": [
+    {
+      "id": "space-weather-summary",
+      "name": "Space Weather Summary",
+      "description": "Kp, R/S/G scales, X-ray flux, solar wind and Bz in one native tile.",
+      "module": "plugin.py",
+      "default_width": 3,
+      "default_height": 2,
+      "refresh_seconds": 300
+    },
+    {
+      "id": "kp-index",
+      "name": "Planetary Kp and Forecast",
+      "description": "Current planetary Kp, condition and latest Kp forecast.",
+      "module": "plugin.py",
+      "default_width": 2,
+      "default_height": 1,
+      "refresh_seconds": 300
+    },
+    {
+      "id": "storm-scales",
+      "name": "NOAA Storm Scales",
+      "description": "Current R, S and G space-weather scales.",
+      "module": "plugin.py",
+      "default_width": 2,
+      "default_height": 1,
+      "refresh_seconds": 300
+    },
+    {
+      "id": "solar-wind",
+      "name": "Real-Time Solar Wind",
+      "description": "Solar-wind speed, density, temperature, Bt and Bz from NOAA real-time feeds.",
+      "module": "plugin.py",
+      "default_width": 2,
+      "default_height": 2,
+      "refresh_seconds": 120
+    },
+    {
+      "id": "xray-flux",
+      "name": "GOES X-Ray Flux",
+      "description": "Current GOES 0.1\u20130.8 nm X-ray flux and derived flare class.",
+      "module": "plugin.py",
+      "default_width": 2,
+      "default_height": 1,
+      "refresh_seconds": 120
+    },
+    {
+      "id": "swpc-alerts",
+      "name": "SWPC Alerts",
+      "description": "Recent NOAA SWPC alerts and warnings. Configure alert_limit in plugin settings.",
+      "module": "plugin.py",
+      "default_width": 3,
+      "default_height": 2,
+      "refresh_seconds": 300
+    }
+  ],
+  "permissions": [
+    "network"
+  ],
+  "secrets": []
+}

@@ -1,0 +1,21 @@
+[Unit]
+Description=Dashboard Matrix WSJT-X UDP Listener
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=dashboard-matrix
+Group=dashboard-matrix
+WorkingDirectory=/opt/dashboard-matrix
+EnvironmentFile=-/etc/dashboard-matrix.env
+ExecStart=/opt/dashboard-matrix/.venv/bin/python /opt/dashboard-matrix/scripts/wsjtx_listener.py --host 0.0.0.0 --port 2237 --output /var/lib/dashboard-matrix/data/wsjtx_status.json
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/dashboard-matrix
+
+[Install]
+WantedBy=multi-user.target

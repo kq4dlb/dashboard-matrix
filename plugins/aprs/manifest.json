@@ -1,0 +1,44 @@
+{
+  "id": "aprs",
+  "name": "APRS.fi Station",
+  "version": "1.0.0",
+  "author": "Dashboard Matrix Project",
+  "description": "Looks up current APRS station position and telemetry through the APRS.fi API. Requires an APRS.fi API key.",
+  "settings_schema": {
+    "type": "object",
+    "properties": {
+      "api_key": {
+        "type": "string"
+      },
+      "callsign": {
+        "type": "string"
+      },
+      "timeout": {
+        "type": "number",
+        "default": 8
+      }
+    }
+  },
+  "widgets": [
+    {
+      "id": "station-status",
+      "name": "APRS Station Status",
+      "description": "Position, path, speed, altitude and last heard",
+      "module": "plugin.py",
+      "default_width": 2,
+      "default_height": 2,
+      "refresh_seconds": 60
+    }
+  ],
+  "permissions": [
+    "network",
+    "secrets"
+  ],
+  "secrets": [
+    {
+      "name": "api_key",
+      "description": "APRS.fi API key",
+      "required": true
+    }
+  ]
+}

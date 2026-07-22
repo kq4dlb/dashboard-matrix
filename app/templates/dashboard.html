@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#071525">
+  <title>Dashboard Matrix</title>
+  <link rel="icon" href="/static/img/dashboard-matrix-mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/css/dashboard.css">
+  <link id="theme-package" rel="stylesheet" href="/themes/matrix-dark.css">
+</head>
+<body class="matrix-shell" data-dashboard-slug="{{ slug }}">
+<header class="app-header">
+  <a class="brand" href="/" aria-label="Dashboard Matrix home">
+    <img src="/static/img/dashboard-matrix-logo.svg" alt="KQ4DLB Dashboard Matrix">
+  </a>
+  <div class="station-identity">
+    <small id="dashboard-title">Dashboard</small>
+    <strong id="station-callsign">—</strong>
+    <span id="station-grid">—</span>
+    <i id="connection-state">Connecting…</i>
+  </div>
+  <div class="header-clock"><strong id="title-clock-time">--:--:--</strong><span id="title-clock-date">Loading date…</span></div>
+  <div class="header-actions"><button id="refresh-all" type="button" title="Refresh dashboard">↻</button><button id="layout-mode" type="button">Layout</button><a class="icon-button" href="/admin" title="Administration">⚙</a></div>
+</header>
+<div class="workspace">
+  <aside class="sidebar">
+    <label class="dashboard-picker"><span>Dashboard</span><select id="dashboard-selector" aria-label="Dashboard"></select></label>
+    <nav id="dashboard-nav" aria-label="Dashboard navigation"></nav>
+    <div class="sidebar-tools">
+      <button id="pack-layout" type="button" hidden>Pack cards</button><button id="reset-layout" type="button" hidden>Reset</button><button id="save-layout" type="button" hidden>Save layout</button>
+      <label>Theme<select id="theme-selector"><option value="matrix-dark">Matrix Dark</option><option value="matrix-light">Matrix Light</option></select></label>
+      <small>Dashboard Matrix {{ app_version }}</small>
+    </div>
+  </aside>
+  <section class="content-area"><div id="layout-notice" class="layout-notice" hidden>Layout mode: drag card headers, resize from the lower-right corner, lock cards as needed, then save.</div><main id="dashboard-grid" class="dashboard-grid" aria-live="polite"></main></section>
+</div>
+<template id="tile-template"><section class="tile" draggable="false"><header class="tile-header"><h2 class="tile-title"></h2><div class="tile-meta"><button class="tile-lock" type="button" title="Lock card" aria-label="Lock card">🔓</button><span class="tile-state">LOADING</span><span class="tile-updated"></span></div></header><div class="tile-content"></div><button class="resize-handle" type="button" title="Resize card" aria-label="Resize card"></button></section></template>
+<script src="/static/js/dashboard.js" defer></script>
+</body>
+</html>

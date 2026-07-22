@@ -1,0 +1,48 @@
+{
+  "id": "rigctld",
+  "name": "Hamlib rigctld",
+  "version": "1.0.0",
+  "author": "Dashboard Matrix Project",
+  "description": "Live radio status from a Hamlib rigctld TCP server. Works with Icom, Yaesu, Kenwood, Flex and other Hamlib-supported radios.",
+  "settings_schema": {
+    "type": "object",
+    "properties": {
+      "host": {
+        "type": "string",
+        "default": "127.0.0.1"
+      },
+      "port": {
+        "type": "integer",
+        "default": 4532
+      },
+      "timeout": {
+        "type": "number",
+        "default": 2.0
+      }
+    }
+  },
+  "widgets": [
+    {
+      "id": "radio-status",
+      "name": "Radio Status",
+      "description": "Frequency, mode, passband, RF power, volume and squelch",
+      "module": "plugin.py",
+      "default_width": 2,
+      "default_height": 2,
+      "refresh_seconds": 3
+    },
+    {
+      "id": "radio-compact",
+      "name": "Radio Compact",
+      "description": "Compact frequency and mode display",
+      "module": "plugin.py",
+      "default_width": 2,
+      "default_height": 1,
+      "refresh_seconds": 2
+    }
+  ],
+  "permissions": [
+    "local-network"
+  ],
+  "secrets": []
+}

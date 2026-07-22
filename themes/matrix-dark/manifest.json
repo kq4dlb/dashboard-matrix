@@ -1,0 +1,9 @@
+{
+  "id": "matrix-dark",
+  "name": "Matrix Dark",
+  "version": "0.1.0",
+  "author": "Dashboard Matrix Project",
+  "description": "The default blue-black Dashboard Matrix theme.",
+  "color_scheme": "dark",
+  "stylesheet": "theme.css"
+}

@@ -1,0 +1,22 @@
+Dashboard Matrix 0.1.0-beta release contents
+
+Application:
+- dashboard and card engine
+- administration interface
+- controlled proxy engine and diagnostics
+- plugin and script runtimes
+- map-provider SDK and DX Cluster provider
+- theme SDK and bundled dark/light themes
+- setup wizard and starter templates
+- layout import, export, screenshot, and publishing APIs
+- update channel checker
+
+Packaging:
+- Python source distribution metadata
+- Docker and Compose files
+- Linux and systemd installer assets
+- Windows PyInstaller spec and GitHub workflow
+- Raspberry Pi installer and optional image workflow
+- Dashboard Matrix Exchange repository template
+- tests and SDK documentation
+- validation report

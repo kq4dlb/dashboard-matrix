@@ -1,0 +1,34 @@
+{
+  "id": "meshtastic",
+  "name": "Meshtastic",
+  "version": "1.0.0",
+  "author": "Dashboard Matrix Project",
+  "description": "Local Meshtastic node summary over serial. Requires optional meshtastic and pyserial packages.",
+  "settings_schema": {
+    "type": "object",
+    "properties": {
+      "port": {
+        "type": "string"
+      },
+      "timeout": {
+        "type": "number",
+        "default": 8
+      }
+    }
+  },
+  "widgets": [
+    {
+      "id": "local-node",
+      "name": "Meshtastic Local Node",
+      "description": "Node identity, battery, voltage, channel utilization and GPS",
+      "module": "plugin.py",
+      "default_width": 2,
+      "default_height": 2,
+      "refresh_seconds": 30
+    }
+  ],
+  "permissions": [
+    "device"
+  ],
+  "secrets": []
+}

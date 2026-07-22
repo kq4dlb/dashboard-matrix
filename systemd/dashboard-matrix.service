@@ -1,0 +1,27 @@
+[Unit]
+Description=KQ4DLB Dashboard Matrix
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=dashboard-matrix
+Group=dashboard-matrix
+WorkingDirectory=/opt/dashboard-matrix
+EnvironmentFile=-/etc/dashboard-matrix.env
+Environment=DASHBOARD_MATRIX_DATA_DIR=/var/lib/dashboard-matrix/data
+Environment=DASHBOARD_MATRIX_USER_PLUGINS_DIR=/var/lib/dashboard-matrix/user_plugins
+Environment=DASHBOARD_MATRIX_USER_SCRIPTS_DIR=/var/lib/dashboard-matrix/user_scripts
+Environment=DASHBOARD_MATRIX_USER_THEMES_DIR=/var/lib/dashboard-matrix/user_themes
+Environment=DASHBOARD_MATRIX_HOST=0.0.0.0
+Environment=DASHBOARD_MATRIX_PORT=8080
+ExecStart=/opt/dashboard-matrix/.venv/bin/python /opt/dashboard-matrix/matrix.py
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/dashboard-matrix
+
+[Install]
+WantedBy=multi-user.target
