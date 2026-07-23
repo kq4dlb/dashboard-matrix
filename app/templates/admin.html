@@ -8,219 +8,304 @@
   <link rel="icon" href="/static/img/dashboard-matrix-mark.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/static/css/dashboard.css">
   <link id="theme-package" rel="stylesheet" href="/themes/matrix-dark.css">
+  <link rel="stylesheet" href="/static/css/admin-tabs.css">
 </head>
-<body>
-<header class="topbar">
-  <div class="title-cluster">
-    <img src="/static/img/dashboard-matrix-mark.svg" alt="" width="42" height="42">
-    <div><h1>Dashboard Matrix Administration</h1><small>Version {{ app_version }}</small></div>
-  </div>
-  <nav>
-    <a href="/" target="_blank" rel="noopener">Open dashboard</a>
+<body class="admin-page">
+<header class="topbar admin-topbar">
+  <a class="admin-brand" href="/admin" aria-label="Dashboard Matrix administration home">
+    <img src="/static/img/dashboard-matrix-mark.svg" alt="" width="48" height="48">
+    <span>
+      <strong>Dashboard Matrix</strong>
+      <small>Administration · Version {{ app_version }}</small>
+    </span>
+  </a>
+  <nav class="admin-topbar-actions" aria-label="Administration actions">
+    <a class="admin-dashboard-link" href="/" target="_blank" rel="noopener">Open dashboard <span aria-hidden="true">↗</span></a>
     <form class="inline-form" action="/admin/logout" method="post"><button type="submit">Log out</button></form>
   </nav>
 </header>
-<main class="admin-layout">
-  <section class="panel station-settings wide">
-    <h2>Station or site identity</h2>
-    <form id="station-form">
-      <div class="station-form-grid">
-        <label>Callsign or identifier<input id="station-callsign" required maxlength="12"></label>
-        <label>Grid square<input id="station-grid-square" required maxlength="6"></label>
-        <label>Latitude<input id="station-latitude" readonly></label>
-        <label>Longitude<input id="station-longitude" readonly></label>
-      </div>
-      <button type="submit">Save station settings</button>
-      <p id="station-message" class="help"></p>
-    </form>
-    <p class="help">Placeholders: <code>{% raw %}{{CALLSIGN}}{% endraw %}</code>, <code>{% raw %}{{GRIDSQUARE}}{% endraw %}</code>, <code>{% raw %}{{LAT}}{% endraw %}</code>, and <code>{% raw %}{{LONG}}{% endraw %}</code>.</p>
-  </section>
 
-  <section class="panel">
-    <h2>Administrator password</h2>
-    <form id="password-form">
-      <label>New password<input id="new-password" type="password" minlength="8" required autocomplete="new-password"></label>
-      <label>Confirm password<input id="confirm-password" type="password" minlength="8" required autocomplete="new-password"></label>
-      <button type="submit">Change password</button>
-      <p id="password-message" class="help"></p>
-    </form>
-  </section>
-
-  <section class="panel">
-    <h2>Dashboards</h2>
-    <form id="dashboard-form">
-      <input id="dashboard-id" type="hidden">
-      <label>Name<input id="dashboard-name" required></label>
-      <label>Slug<input id="dashboard-slug" required pattern="[a-z0-9][a-z0-9-]*"></label>
-      <div class="form-grid">
-        <label>Columns<input id="dashboard-columns" type="number" min="1" max="12" value="4"></label>
-        <label>Rows<input id="dashboard-rows" type="number" min="1" max="24" value="3"></label>
-        <label>Page rotation seconds<input id="dashboard-rotate" type="number" min="0" value="45"></label>
-        <label>Sort order<input id="dashboard-sort" type="number" min="0" value="0"></label>
-      </div>
-      <label class="inline"><input id="dashboard-enabled" type="checkbox" checked> Enabled</label>
-      <label class="inline"><input id="dashboard-default" type="checkbox"> Default</label>
-      <div class="actions"><button type="submit">Save dashboard</button><button id="dashboard-clear" type="button">Clear</button></div>
-    </form>
-    <div id="dashboard-list"></div>
-  </section>
-
-  <section class="panel">
-    <h2 id="form-heading">Add card</h2>
-    <label>Dashboard<select id="dashboard-select"></select></label>
-    <form id="tile-form">
-      <input id="tile-id" type="hidden">
-      <label>Title<input id="title" required maxlength="120"></label>
-      <label>Type<select id="tile-type"><option>iframe</option><option>image</option><option>rotation</option><option>text</option><option>clock</option><option>status</option><option>provider</option><option>script</option><option>plugin</option></select></label>
-      <label>Sources, one per line<textarea id="sources" rows="4"></textarea></label>
-      <label>Title display<select id="show-title"><option value="auto">Auto — hide on one-row cards</option><option value="show">Always show</option><option value="hide">Always hide</option></select></label>
-      <label>Provider, script, or plugin settings JSON<textarea id="settings" rows="5" placeholder='{"provider":"nws_forecast","use_station_location":true}'></textarea></label>
-      <p class="help" id="available-scripts">Available scripts: loading…</p>
-      <div class="form-grid">
-        <label>Row<input id="row-pos" type="number" min="1" value="1"></label>
-        <label>Column<input id="col-pos" type="number" min="1" value="1"></label>
-        <label>Width<input id="width" type="number" min="1" max="12" value="1"></label>
-        <label>Height<input id="height" type="number" min="1" max="24" value="1"></label>
-        <label>Refresh seconds<input id="refresh-seconds" type="number" min="0" value="300"></label>
-        <label>Source rotation seconds<input id="rotate-seconds" type="number" min="0" value="0"></label>
-      </div>
-      <label class="inline"><input id="enabled" type="checkbox" checked> Enabled</label>
-      <div class="actions"><button type="submit">Save card</button><button id="cancel-edit" type="button">Clear</button></div>
-      <p id="form-message"></p>
-    </form>
-  </section>
-
-  <section class="panel wide" id="layout-transfer-section">
-    <div class="catalog-heading"><div><h2>Layout import, export, and Exchange publishing</h2><p class="help">Analyze an imported layout before applying it. Exports can be downloaded locally or pushed directly to the configured GitHub Exchange repository.</p></div></div>
-    <div class="admin-section-grid">
-      <div>
-        <h3>Import layout</h3>
-        <label>Layout JSON file<input id="layout-import-file" type="file" accept="application/json,.json"></label>
-        <label>Conflict handling<select id="layout-conflict-strategy"><option value="rename">Rename incoming dashboards</option><option value="replace">Replace matching dashboards</option><option value="merge">Merge cards below existing cards</option><option value="skip">Skip matching dashboards</option></select></label>
-        <label class="inline"><input id="layout-import-station" type="checkbox"> Import included station settings</label>
-        <div class="actions"><button id="layout-analyze" type="button">Analyze</button><button id="layout-import" type="button" disabled>Import</button></div>
-        <pre id="layout-analysis" class="analysis-box">Choose a layout file to begin.</pre>
-      </div>
-      <div>
-        <h3>Export and publish</h3>
-        <label>Layout title<input id="layout-export-title" placeholder="My dashboard layout"></label>
-        <label>Description<textarea id="layout-export-description" rows="3"></textarea></label>
-        <label>Tags, comma-separated<input id="layout-export-tags" placeholder="amateur-radio, weather, home-lab"></label>
-        <label class="inline"><input id="layout-export-station" type="checkbox"> Include safe station settings</label>
-        <label>Screenshot dashboard<select id="layout-screenshot-dashboard"></select></label>
-        <div class="actions"><button id="layout-preview" type="button">Capture screenshot</button><button id="layout-download" type="button">Download JSON</button></div>
-        <img id="layout-screenshot-preview" class="preview-frame" alt="Dashboard screenshot preview" hidden>
-        <p id="layout-screenshot-message" class="help"></p>
-      </div>
-      <div>
-        <h3>GitHub Exchange destination</h3>
-        <label>Repository<input id="layout-publish-repository" value="KQ4DLB/dashboard-matrix-exchange"></label>
-        <label>Branch<input id="layout-publish-branch" value="main"></label>
-        <label>Folder<input id="layout-publish-folder" value="layouts"></label>
-        <label>GitHub token<input id="layout-publish-token" type="password" autocomplete="off" placeholder="Not stored; optional when server environment token is set"></label>
-        <label class="inline"><input id="layout-auto-publish" type="checkbox"> Automatically push when Export is selected</label>
-        <div class="actions"><button id="layout-save-publish" type="button">Save destination</button><button id="layout-export-action" type="button">Export</button></div>
-        <p id="layout-publish-message" class="help"></p>
-      </div>
+<main class="admin-shell">
+  <header class="admin-page-heading">
+    <div>
+      <span class="eyebrow">Configuration workspace</span>
+      <h1>Administration</h1>
+      <p>Manage dashboards, cards, sources, layouts, themes, plugins, and product settings from one organized workspace.</p>
     </div>
-  </section>
+  </header>
 
-  <section class="panel wide" id="updates-section">
-    <div class="catalog-heading"><div><h2>Product updates</h2><p class="help">Choose stable, beta, or nightly checks. Dashboard Matrix reports availability but never installs updates automatically.</p></div><button id="update-check" type="button">Check now</button></div>
-    <div class="form-grid">
-      <label>GitHub repository<input id="update-repository" value="KQ4DLB/dashboard-matrix"></label>
-      <label>Release channel<select id="update-channel"><option value="stable">Stable</option><option value="beta">Beta</option><option value="nightly">Nightly</option></select></label>
-      <label class="inline"><input id="update-automatic" type="checkbox" checked> Check daily</label>
+  <nav class="admin-tabs" role="tablist" aria-label="Administration sections">
+    <button class="admin-tab is-active" id="admin-tab-overview" type="button" role="tab" aria-selected="true" aria-controls="admin-panel-overview" data-admin-tab="overview">
+      <span>Overview</span><small>Identity, security, themes, and updates</small>
+    </button>
+    <button class="admin-tab" id="admin-tab-dashboards" type="button" role="tab" aria-selected="false" aria-controls="admin-panel-dashboards" data-admin-tab="dashboards" tabindex="-1">
+      <span>Dashboards &amp; Cards</span><small>Pages, cards, positioning, and configuration</small>
+    </button>
+    <button class="admin-tab" id="admin-tab-layouts" type="button" role="tab" aria-selected="false" aria-controls="admin-panel-layouts" data-admin-tab="layouts" tabindex="-1">
+      <span>Layouts &amp; Sharing</span><small>Import, export, screenshots, and publishing</small>
+    </button>
+    <button class="admin-tab" id="admin-tab-sources" type="button" role="tab" aria-selected="false" aria-controls="admin-panel-sources" data-admin-tab="sources" tabindex="-1">
+      <span>Sources &amp; Catalog</span><small>Proxy endpoints and reusable card templates</small>
+    </button>
+    <button class="admin-tab" id="admin-tab-extensions" type="button" role="tab" aria-selected="false" aria-controls="admin-panel-extensions" data-admin-tab="extensions" tabindex="-1">
+      <span>Extensions</span><small>Exchange packages, plugins, and permissions</small>
+    </button>
+  </nav>
+
+  <div class="admin-tab-content">
+<section class="admin-tab-panel admin-layout" id="admin-panel-overview" role="tabpanel" aria-labelledby="admin-tab-overview" data-admin-panel="overview" tabindex="0">
+  <div class="admin-section-heading wide">
+    <div>
+      <span class="eyebrow">Administration</span>
+      <h2>Overview</h2>
+      <p>Configure the station identity, administrator access, appearance, and update preferences.</p>
     </div>
-    <div class="actions"><button id="update-save" type="button">Save update settings</button></div>
-    <pre id="update-result" class="analysis-box">No update check has been run.</pre>
-  </section>
+  </div>
 
-  <section class="panel wide" id="theme-section">
-    <div class="catalog-heading"><div><h2>Theme packages</h2><p class="help">Bundled and user themes are discovered from package manifests. Matrix Light is the Theme SDK reference implementation.</p></div></div>
-    <div id="theme-package-list" class="catalog-list"></div>
-  </section>
+<section class="panel station-settings wide">
+<h2>Station or site identity</h2>
+<form id="station-form">
+<div class="station-form-grid">
+<label>Callsign or identifier<input id="station-callsign" maxlength="12" required=""/></label>
+<label>Grid square<input id="station-grid-square" maxlength="6" required=""/></label>
+<label>Latitude<input id="station-latitude" readonly=""/></label>
+<label>Longitude<input id="station-longitude" readonly=""/></label>
+</div>
+<button type="submit">Save station settings</button>
+<p class="help" id="station-message"></p>
+</form>
+<p class="help">Placeholders: <code>{% raw %}{{CALLSIGN}}{% endraw %}</code>, <code>{% raw %}{{GRIDSQUARE}}{% endraw %}</code>, <code>{% raw %}{{LAT}}{% endraw %}</code>, and <code>{% raw %}{{LONG}}{% endraw %}</code>.</p>
+</section>
 
-  <section class="panel wide">
-    <div class="catalog-heading"><div><h2>Iframe proxy sources</h2><p class="help">Use only for sites you are authorized to proxy. Each source is restricted to one approved hostname and can be diagnosed before use.</p></div></div>
-    <form id="proxy-form">
-      <input id="proxy-original-id" type="hidden">
-      <div class="form-grid">
-        <label>Proxy ID<input id="proxy-source-id" required pattern="[a-z0-9][a-z0-9-]*"></label>
-        <label>Name<input id="proxy-name" required></label>
-        <label>Base URL<input id="proxy-base-url" type="url" required></label>
-        <label>Cache seconds<input id="proxy-cache-seconds" type="number" min="0" value="0"></label>
-      </div>
-      <div class="form-grid">
-        <label class="inline"><input id="proxy-enabled" type="checkbox"> Enabled</label>
-        <label class="inline"><input id="proxy-strip-xfo" type="checkbox" checked> Remove X-Frame-Options</label>
-        <label class="inline"><input id="proxy-strip-csp" type="checkbox" checked> Remove CSP frame-ancestors</label>
-        <label class="inline"><input id="proxy-inject-base" type="checkbox" checked> Inject HTML base tag</label>
-        <label class="inline"><input id="proxy-allow-http" type="checkbox"> Allow plain HTTP</label>
-      </div>
-      <div class="actions"><button type="submit">Save proxy source</button><button id="proxy-clear" type="button">Clear</button></div>
-      <p id="proxy-message" class="help"></p>
-    </form>
-    <div id="proxy-list"></div>
-    <pre id="proxy-diagnostic-result" class="diagnostic-box">Select Test on a proxy source to see DNS, HTTP, embedding-header, and rewrite diagnostics.</pre>
-  </section>
+<section class="panel">
+<h2>Administrator password</h2>
+<form id="password-form">
+<label>New password<input autocomplete="new-password" id="new-password" minlength="8" required="" type="password"/></label>
+<label>Confirm password<input autocomplete="new-password" id="confirm-password" minlength="8" required="" type="password"/></label>
+<button type="submit">Change password</button>
+<p class="help" id="password-message"></p>
+</form>
+</section>
 
-  <section class="panel wide">
-    <div class="catalog-heading"><div><h2>Predefined URL and provider catalog</h2><p class="help">Choose a destination dashboard and add a reusable card template.</p></div><label>Destination dashboard<select id="catalog-dashboard-select"></select></label></div>
-    <div id="catalog-list" class="catalog-list"></div>
-  </section>
+<section class="panel wide" id="updates-section">
+<div class="catalog-heading"><div><h2>Product updates</h2><p class="help">Choose stable, beta, or nightly checks. Dashboard Matrix reports availability but never installs updates automatically.</p></div><button id="update-check" type="button">Check now</button></div>
+<div class="form-grid">
+<label>GitHub repository<input id="update-repository" value="KQ4DLB/dashboard-matrix"/></label>
+<label>Release channel<select id="update-channel"><option value="stable">Stable</option><option value="beta">Beta</option><option value="nightly">Nightly</option></select></label>
+<label class="inline"><input checked="" id="update-automatic" type="checkbox"/> Check daily</label>
+</div>
+<div class="actions"><button id="update-save" type="button">Save update settings</button></div>
+<pre class="analysis-box" id="update-result">No update check has been run.</pre>
+</section>
 
-  <section class="panel wide">
-    <h2 id="catalog-form-heading">Add catalog item</h2>
-    <form id="catalog-form">
-      <input id="catalog-original-id" type="hidden">
-      <div class="form-grid">
-        <label>Catalog ID<input id="catalog-item-id" required pattern="[a-z0-9][a-z0-9-]*"></label>
-        <label>Category<input id="catalog-category" required></label>
-        <label>Title<input id="catalog-title" required></label>
-        <label>Type<select id="catalog-type"><option>iframe</option><option>image</option><option>rotation</option><option>text</option><option>clock</option><option>status</option><option>provider</option><option>script</option><option>plugin</option></select></label>
-      </div>
-      <label>Description<textarea id="catalog-description" rows="2"></textarea></label>
-      <label>Sources, one per line<textarea id="catalog-sources" rows="4"></textarea></label>
-      <label>Settings JSON<textarea id="catalog-settings" rows="4"></textarea></label>
-      <div class="form-grid">
-        <label>Refresh seconds<input id="catalog-refresh" type="number" min="0" value="300"></label>
-        <label>Rotation seconds<input id="catalog-rotate" type="number" min="0" value="0"></label>
-        <label>Sort order<input id="catalog-sort" type="number" min="0" value="0"></label>
-        <label class="inline"><input id="catalog-enabled" type="checkbox" checked> Enabled</label>
-      </div>
-      <div class="actions"><button type="submit">Save catalog item</button><button id="catalog-clear" type="button">Clear</button></div>
-      <p id="catalog-message" class="help"></p>
-    </form>
-  </section>
+<section class="panel wide" id="theme-section">
+<div class="catalog-heading"><div><h2>Theme packages</h2><p class="help">Bundled and user themes are discovered from package manifests. Matrix Light is the Theme SDK reference implementation.</p></div></div>
+<div class="catalog-list" id="theme-package-list"></div>
+</section>
 
-  <section class="panel wide">
-    <div class="catalog-heading"><div><h2>Dashboard Matrix Exchange</h2><p class="help">Sync trusted GitHub-hosted indexes, verify package checksums, and install community packages.</p></div><button id="market-sync-all" type="button">Sync enabled sources</button></div>
-    <div class="form-grid">
-      <label>Source name<input id="market-source-name" placeholder="Dashboard Matrix Exchange"></label>
-      <label>GitHub raw index URL<input id="market-source-url" placeholder="https://raw.githubusercontent.com/owner/repo/main/index.json"></label>
-      <label class="inline"><input id="market-source-enabled" type="checkbox" checked> Enabled</label>
-      <div class="actions"><button id="market-source-add" type="button">Add source</button></div>
+<section class="panel wide"><h2>About this beta</h2><p class="help">KQ4DLB Dashboard Matrix is the standalone open-source dashboard product by Marc Smith (KQ4DLB). Version {{ app_version }}.</p></section>
+</section>
+
+<section class="admin-tab-panel admin-layout" id="admin-panel-dashboards" role="tabpanel" aria-labelledby="admin-tab-dashboards" data-admin-panel="dashboards" tabindex="0" hidden>
+  <div class="admin-section-heading wide">
+    <div>
+      <span class="eyebrow">Administration</span>
+      <h2>Dashboards and cards</h2>
+      <p>Create dashboard pages, configure cards, and review everything currently assigned to each dashboard.</p>
     </div>
-    <div id="market-source-list" class="catalog-list"></div>
-    <h3>Available packages</h3>
-    <div id="market-item-list" class="catalog-list"></div>
-    <p id="market-message" class="help"></p>
-  </section>
+  </div>
 
-  <section class="panel wide">
-    <div class="catalog-heading"><div><h2>Plugin SDK and installed plugins</h2><p class="help">Approve declared permissions explicitly. Secret values remain in environment variables and are never stored in the database.</p></div><label>Destination dashboard<select id="plugin-dashboard-select"></select></label></div>
-    <div id="plugin-list" class="catalog-list"></div>
-    <p id="plugin-message" class="help"></p>
-  </section>
+<section class="panel">
+<h2>Dashboards</h2>
+<form id="dashboard-form">
+<input id="dashboard-id" type="hidden"/>
+<label>Name<input id="dashboard-name" required=""/></label>
+<label>Slug<input id="dashboard-slug" pattern="[a-z0-9][a-z0-9-]*" required=""/></label>
+<div class="form-grid">
+<label>Columns<input id="dashboard-columns" max="12" min="1" type="number" value="4"/></label>
+<label>Rows<input id="dashboard-rows" max="24" min="1" type="number" value="3"/></label>
+<label>Page rotation seconds<input id="dashboard-rotate" min="0" type="number" value="45"/></label>
+<label>Sort order<input id="dashboard-sort" min="0" type="number" value="0"/></label>
+</div>
+<label class="inline"><input checked="" id="dashboard-enabled" type="checkbox"/> Enabled</label>
+<label class="inline"><input id="dashboard-default" type="checkbox"/> Default</label>
+<div class="actions"><button type="submit">Save dashboard</button><button id="dashboard-clear" type="button">Clear</button></div>
+</form>
+<div id="dashboard-list"></div>
+</section>
 
-  <section class="panel wide">
-    <div class="catalog-heading"><div><h2>Configured cards</h2><p class="help">Filter by dashboard or show cards from every dashboard.</p></div><label>View dashboard<select id="tile-filter-dashboard-select"></select></label></div>
-    <div id="tile-list"></div>
-  </section>
+<section class="panel">
+<h2 id="form-heading">Add card</h2>
+<label>Dashboard<select id="dashboard-select"></select></label>
+<form id="tile-form">
+<input id="tile-id" type="hidden"/>
+<label>Title<input id="title" maxlength="120" required=""/></label>
+<label>Type<select id="tile-type"><option>iframe</option><option>image</option><option>rotation</option><option>text</option><option>clock</option><option>status</option><option>provider</option><option>script</option><option>plugin</option></select></label>
+<label>Sources, one per line<textarea id="sources" rows="4"></textarea></label>
+<label>Title display<select id="show-title"><option value="auto">Auto — hide on one-row cards</option><option value="show">Always show</option><option value="hide">Always hide</option></select></label>
+<label>Provider, script, or plugin settings JSON<textarea id="settings" placeholder='{"provider":"nws_forecast","use_station_location":true}' rows="5"></textarea></label>
+<p class="help" id="available-scripts">Available scripts: loading…</p>
+<div class="form-grid">
+<label>Row<input id="row-pos" min="1" type="number" value="1"/></label>
+<label>Column<input id="col-pos" min="1" type="number" value="1"/></label>
+<label>Width<input id="width" max="12" min="1" type="number" value="1"/></label>
+<label>Height<input id="height" max="24" min="1" type="number" value="1"/></label>
+<label>Refresh seconds<input id="refresh-seconds" min="0" type="number" value="300"/></label>
+<label>Source rotation seconds<input id="rotate-seconds" min="0" type="number" value="0"/></label>
+</div>
+<label class="inline"><input checked="" id="enabled" type="checkbox"/> Enabled</label>
+<div class="actions"><button type="submit">Save card</button><button id="cancel-edit" type="button">Clear</button></div>
+<p id="form-message"></p>
+</form>
+</section>
 
-  <section class="panel wide"><h2>About this beta</h2><p class="help">KQ4DLB Dashboard Matrix is the standalone open-source dashboard product by Marc Smith (KQ4DLB). Version {{ app_version }}.</p></section>
+<section class="panel wide">
+<div class="catalog-heading"><div><h2>Configured cards</h2><p class="help">Filter by dashboard or show cards from every dashboard.</p></div><label>View dashboard<select id="tile-filter-dashboard-select"></select></label></div>
+<div id="tile-list"></div>
+</section>
+</section>
+
+<section class="admin-tab-panel admin-layout" id="admin-panel-layouts" role="tabpanel" aria-labelledby="admin-tab-layouts" data-admin-panel="layouts" tabindex="0" hidden>
+  <div class="admin-section-heading wide">
+    <div>
+      <span class="eyebrow">Administration</span>
+      <h2>Layouts and sharing</h2>
+      <p>Move complete dashboard configurations between systems or publish them to the Dashboard Matrix Exchange.</p>
+    </div>
+  </div>
+
+<section class="panel wide" id="layout-transfer-section">
+<div class="catalog-heading"><div><h2>Layout import, export, and Exchange publishing</h2><p class="help">Analyze an imported layout before applying it. Exports can be downloaded locally or pushed directly to the configured GitHub Exchange repository.</p></div></div>
+<div class="admin-section-grid">
+<div>
+<h3>Import layout</h3>
+<label>Layout JSON file<input accept="application/json,.json" id="layout-import-file" type="file"/></label>
+<label>Conflict handling<select id="layout-conflict-strategy"><option value="rename">Rename incoming dashboards</option><option value="replace">Replace matching dashboards</option><option value="merge">Merge cards below existing cards</option><option value="skip">Skip matching dashboards</option></select></label>
+<label class="inline"><input id="layout-import-station" type="checkbox"/> Import included station settings</label>
+<div class="actions"><button id="layout-analyze" type="button">Analyze</button><button disabled="" id="layout-import" type="button">Import</button></div>
+<pre class="analysis-box" id="layout-analysis">Choose a layout file to begin.</pre>
+</div>
+<div>
+<h3>Export and publish</h3>
+<label>Layout title<input id="layout-export-title" placeholder="My dashboard layout"/></label>
+<label>Description<textarea id="layout-export-description" rows="3"></textarea></label>
+<label>Tags, comma-separated<input id="layout-export-tags" placeholder="amateur-radio, weather, home-lab"/></label>
+<label class="inline"><input id="layout-export-station" type="checkbox"/> Include safe station settings</label>
+<label>Screenshot dashboard<select id="layout-screenshot-dashboard"></select></label>
+<div class="actions"><button id="layout-preview" type="button">Capture screenshot</button><button id="layout-download" type="button">Download JSON</button></div>
+<img alt="Dashboard screenshot preview" class="preview-frame" hidden="" id="layout-screenshot-preview"/>
+<p class="help" id="layout-screenshot-message"></p>
+</div>
+<div>
+<h3>GitHub Exchange destination</h3>
+<label>Repository<input id="layout-publish-repository" value="KQ4DLB/dashboard-matrix-exchange"/></label>
+<label>Branch<input id="layout-publish-branch" value="main"/></label>
+<label>Folder<input id="layout-publish-folder" value="layouts"/></label>
+<label>GitHub token<input autocomplete="off" id="layout-publish-token" placeholder="Not stored; optional when server environment token is set" type="password"/></label>
+<label class="inline"><input id="layout-auto-publish" type="checkbox"/> Automatically push when Export is selected</label>
+<div class="actions"><button id="layout-save-publish" type="button">Save destination</button><button id="layout-export-action" type="button">Export</button></div>
+<p class="help" id="layout-publish-message"></p>
+</div>
+</div>
+</section>
+</section>
+
+<section class="admin-tab-panel admin-layout" id="admin-panel-sources" role="tabpanel" aria-labelledby="admin-tab-sources" data-admin-panel="sources" tabindex="0" hidden>
+  <div class="admin-section-heading wide">
+    <div>
+      <span class="eyebrow">Administration</span>
+      <h2>Sources and catalog</h2>
+      <p>Configure controlled iframe proxy sources and maintain reusable URL, provider, script, and plugin card templates.</p>
+    </div>
+  </div>
+
+<section class="panel wide">
+<div class="catalog-heading"><div><h2>Iframe proxy sources</h2><p class="help">Use only for sites you are authorized to proxy. Each source is restricted to one approved hostname and can be diagnosed before use.</p></div></div>
+<form id="proxy-form">
+<input id="proxy-original-id" type="hidden"/>
+<div class="form-grid">
+<label>Proxy ID<input id="proxy-source-id" pattern="[a-z0-9][a-z0-9-]*" required=""/></label>
+<label>Name<input id="proxy-name" required=""/></label>
+<label>Base URL<input id="proxy-base-url" required="" type="url"/></label>
+<label>Cache seconds<input id="proxy-cache-seconds" min="0" type="number" value="0"/></label>
+</div>
+<div class="form-grid">
+<label class="inline"><input id="proxy-enabled" type="checkbox"/> Enabled</label>
+<label class="inline"><input checked="" id="proxy-strip-xfo" type="checkbox"/> Remove X-Frame-Options</label>
+<label class="inline"><input checked="" id="proxy-strip-csp" type="checkbox"/> Remove CSP frame-ancestors</label>
+<label class="inline"><input checked="" id="proxy-inject-base" type="checkbox"/> Inject HTML base tag</label>
+<label class="inline"><input id="proxy-allow-http" type="checkbox"/> Allow plain HTTP</label>
+</div>
+<div class="actions"><button type="submit">Save proxy source</button><button id="proxy-clear" type="button">Clear</button></div>
+<p class="help" id="proxy-message"></p>
+</form>
+<div id="proxy-list"></div>
+<pre class="diagnostic-box" id="proxy-diagnostic-result">Select Test on a proxy source to see DNS, HTTP, embedding-header, and rewrite diagnostics.</pre>
+</section>
+
+<section class="panel wide">
+<div class="catalog-heading"><div><h2>Predefined URL and provider catalog</h2><p class="help">Choose a destination dashboard and add a reusable card template.</p></div><label>Destination dashboard<select id="catalog-dashboard-select"></select></label></div>
+<div class="catalog-list" id="catalog-list"></div>
+</section>
+
+<section class="panel wide">
+<h2 id="catalog-form-heading">Add catalog item</h2>
+<form id="catalog-form">
+<input id="catalog-original-id" type="hidden"/>
+<div class="form-grid">
+<label>Catalog ID<input id="catalog-item-id" pattern="[a-z0-9][a-z0-9-]*" required=""/></label>
+<label>Category<input id="catalog-category" required=""/></label>
+<label>Title<input id="catalog-title" required=""/></label>
+<label>Type<select id="catalog-type"><option>iframe</option><option>image</option><option>rotation</option><option>text</option><option>clock</option><option>status</option><option>provider</option><option>script</option><option>plugin</option></select></label>
+</div>
+<label>Description<textarea id="catalog-description" rows="2"></textarea></label>
+<label>Sources, one per line<textarea id="catalog-sources" rows="4"></textarea></label>
+<label>Settings JSON<textarea id="catalog-settings" rows="4"></textarea></label>
+<div class="form-grid">
+<label>Refresh seconds<input id="catalog-refresh" min="0" type="number" value="300"/></label>
+<label>Rotation seconds<input id="catalog-rotate" min="0" type="number" value="0"/></label>
+<label>Sort order<input id="catalog-sort" min="0" type="number" value="0"/></label>
+<label class="inline"><input checked="" id="catalog-enabled" type="checkbox"/> Enabled</label>
+</div>
+<div class="actions"><button type="submit">Save catalog item</button><button id="catalog-clear" type="button">Clear</button></div>
+<p class="help" id="catalog-message"></p>
+</form>
+</section>
+</section>
+
+<section class="admin-tab-panel admin-layout" id="admin-panel-extensions" role="tabpanel" aria-labelledby="admin-tab-extensions" data-admin-panel="extensions" tabindex="0" hidden>
+  <div class="admin-section-heading wide">
+    <div>
+      <span class="eyebrow">Administration</span>
+      <h2>Extensions</h2>
+      <p>Synchronize Exchange sources, install community packages, and approve plugin permissions and secret mappings.</p>
+    </div>
+  </div>
+
+<section class="panel wide">
+<div class="catalog-heading"><div><h2>Dashboard Matrix Exchange</h2><p class="help">Sync trusted GitHub-hosted indexes, verify package checksums, and install community packages.</p></div><button id="market-sync-all" type="button">Sync enabled sources</button></div>
+<div class="form-grid">
+<label>Source name<input id="market-source-name" placeholder="Dashboard Matrix Exchange"/></label>
+<label>GitHub raw index URL<input id="market-source-url" placeholder="https://raw.githubusercontent.com/owner/repo/main/index.json"/></label>
+<label class="inline"><input checked="" id="market-source-enabled" type="checkbox"/> Enabled</label>
+<div class="actions"><button id="market-source-add" type="button">Add source</button></div>
+</div>
+<div class="catalog-list" id="market-source-list"></div>
+<h3>Available packages</h3>
+<div class="catalog-list" id="market-item-list"></div>
+<p class="help" id="market-message"></p>
+</section>
+
+<section class="panel wide">
+<div class="catalog-heading"><div><h2>Plugin SDK and installed plugins</h2><p class="help">Approve declared permissions explicitly. Secret values remain in environment variables and are never stored in the database.</p></div><label>Destination dashboard<select id="plugin-dashboard-select"></select></label></div>
+<div class="catalog-list" id="plugin-list"></div>
+<p class="help" id="plugin-message"></p>
+</section>
+</section>
+  </div>
 </main>
+
+<script src="/static/js/admin-tabs.js" defer></script>
 <script src="/static/js/admin.js" defer></script>
 <script src="/static/js/admin-beta.js" defer></script>
 </body>

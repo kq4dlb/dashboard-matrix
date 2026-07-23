@@ -12,3 +12,5 @@ data/plugin_backups/
 *.bak
 dist/
 build/
+dashboard-matrix.code-workspace
+

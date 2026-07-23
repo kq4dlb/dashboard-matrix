@@ -6,7 +6,8 @@ self-hosted dashboard application.
 The release is intended for hands-on testing. Begin with a clean data directory,
 complete the first-run wizard, choose a starter template, and test dashboard
 editing, proxy diagnostics, plugins, themes, layout import/export, screenshot
-capture, and Exchange publishing.
+capture, and Exchange publishing. The Administration page is organized into five
+tabbed workspaces with keyboard navigation and remembered selection.
 
 ## Important beta notes
 
