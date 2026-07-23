@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Reorganized Administration into accessible tabs for Overview, Dashboards & Cards, Layouts & Sharing, Sources & Catalog, and Extensions.
+- Added keyboard navigation, URL hashes, and remembered tab selection.
+- Refined the Administration visual hierarchy, spacing, responsive behavior, and focus states.
+
 ## 0.1.0-beta
 
 - Established Dashboard Matrix as an independent dashboard product.

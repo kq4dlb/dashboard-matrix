@@ -21,6 +21,7 @@ shareable layouts in one independent open-source project.
 - Theme package SDK with Matrix Dark and Matrix Light
 - Stable, beta, and nightly update channels
 - Docker, Linux, Windows executable, and Raspberry Pi automation
+- Tabbed Administration workspace with keyboard navigation and remembered sections
 
 ## Quick start
 
@@ -88,6 +89,7 @@ pip install '.[station]'
 
 ## Documentation
 
+- [Administration interface](docs/ADMINISTRATION.md)
 - [Beta testing](docs/BETA_TESTING.md)
 - [Layout sharing](docs/LAYOUT_SHARING.md)
 - [Exchange repository](docs/EXCHANGE_REPOSITORY.md)
