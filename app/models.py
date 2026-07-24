@@ -75,7 +75,7 @@ class StationSettingsResponse(StationSettings):
     latitude: float
     longitude: float
     display_name: str = "Dashboard Matrix"
-    default_theme: str = "matrix-dark"
+    default_theme: str = "matrix-light"
 
 
 class CatalogItemBase(BaseModel):

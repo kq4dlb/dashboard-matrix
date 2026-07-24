@@ -3,7 +3,7 @@ let slug=document.body.dataset.dashboardSlug||"main", dashboard=null, dashboards
 const grid=document.getElementById("dashboard-grid"),title=document.getElementById("dashboard-title"),connectionState=document.getElementById("connection-state"),selector=document.getElementById("dashboard-selector"),timers=new Map(),stationCallsign=document.getElementById("station-callsign"),stationGrid=document.getElementById("station-grid"),titleClockTime=document.getElementById("title-clock-time"),titleClockDate=document.getElementById("title-clock-date");
 const dashboardNav=document.getElementById("dashboard-nav"),themeSelector=document.getElementById("theme-selector");
 function updateTitleClock(){const n=new Date();titleClockTime.textContent=n.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",second:"2-digit"});titleClockDate.textContent=n.toLocaleDateString([], {weekday:"short",month:"short",day:"numeric",year:"numeric"})}
-async function loadStationSettings(){const r=await fetch('/api/settings/station',{cache:'no-store'});if(!r.ok)return;const d=await r.json();stationCallsign.textContent=d.callsign;stationGrid.textContent=`${d.grid_square} · ${d.latitude}, ${d.longitude}`;serverDefaultTheme=d.default_theme||"matrix-dark";document.title=d.display_name||"Dashboard Matrix"}
+async function loadStationSettings(){const r=await fetch('/api/settings/station',{cache:'no-store'});if(!r.ok)return;const d=await r.json();stationCallsign.textContent=d.callsign;stationGrid.textContent=`${d.grid_square} · ${d.latitude}, ${d.longitude}`;serverDefaultTheme=d.default_theme||"matrix-light";document.title=d.display_name||"Dashboard Matrix"}
 function clearTimers(){for(const ids of timers.values())ids.forEach(clearInterval);timers.clear();clearTimeout(pageTimer)}
 function setTileState(el,state){el.dataset.state=state;el.querySelector(".tile-state").textContent=state;el.querySelector(".tile-updated").textContent=new Date().toLocaleTimeString()}
 function cacheBusted(url){return `${url}${url.includes("?")?"&":"?"}_matrix=${Date.now()}`}
@@ -85,11 +85,11 @@ async function loadThemes(){
   const response=await fetch('/api/themes',{cache:'no-store'});
   if(!response.ok)return;
   const themes=await response.json();
-  const selected=localStorage.getItem('dashboard-matrix-theme')||serverDefaultTheme||'matrix-dark';
+  const selected=localStorage.getItem('dashboard-matrix-theme')||serverDefaultTheme||'matrix-light';
   themeSelector.replaceChildren(...themes.map(theme=>{
     const option=document.createElement('option');option.value=theme.id;option.textContent=theme.name;return option;
   }));
-  applyTheme(themes.some(theme=>theme.id===selected)?selected:(themes[0]?.id||'matrix-dark'));
+  applyTheme(themes.some(theme=>theme.id===selected)?selected:(themes[0]?.id||'matrix-light'));
 }
 function schedulePageRotation(){clearTimeout(pageTimer);if(!dashboard||dashboard.rotate_seconds<=0||dashboards.length<2||layoutMode)return;pageTimer=setTimeout(()=>{const i=dashboards.findIndex(d=>d.slug===slug);slug=dashboards[(i+1)%dashboards.length].slug;history.replaceState(null,"",`/?slug=${encodeURIComponent(slug)}`);loadDashboard().catch(showFatal)},dashboard.rotate_seconds*1000)}
 function showFatal(x){grid.innerHTML=`<div class="error-box">${esc(x.message)}</div>`}

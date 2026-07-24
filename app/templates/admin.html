@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#071525">
+  <meta name="theme-color" content="#f4f7fa">
   <title>Dashboard Matrix Administration</title>
   <link rel="icon" href="/static/img/dashboard-matrix-mark.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/static/css/dashboard.css">
-  <link id="theme-package" rel="stylesheet" href="/themes/matrix-dark.css">
+  <link id="theme-package" rel="stylesheet" href="/themes/{{ default_theme | default("matrix-light") }}.css">
   <link rel="stylesheet" href="/static/css/admin-tabs.css">
 </head>
 <body class="admin-page">
@@ -99,8 +99,9 @@
 </section>
 
 <section class="panel wide" id="theme-section">
-<div class="catalog-heading"><div><h2>Theme packages</h2><p class="help">Bundled and user themes are discovered from package manifests. Matrix Light is the Theme SDK reference implementation.</p></div></div>
+<div class="catalog-heading"><div><h2>Theme packages</h2><p class="help">Preview a package in Administration or make it the site default. Matrix Light is the default and Theme SDK reference implementation.</p></div><button id="theme-use-default" type="button">Use site default</button></div>
 <div class="catalog-list" id="theme-package-list"></div>
+<p class="help" id="theme-package-message" aria-live="polite"></p>
 </section>
 
 <section class="panel wide"><h2>About this beta</h2><p class="help">KQ4DLB Dashboard Matrix is the standalone open-source dashboard product by Marc Smith (KQ4DLB). Version {{ app_version }}.</p></section>

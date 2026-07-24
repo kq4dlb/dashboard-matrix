@@ -19,7 +19,7 @@ class SetupRequest(BaseModel):
     grid_square: str = Field(default="AA00aa", min_length=6, max_length=6)
     template: Literal["blank", "amateur-radio", "home-lab"] = "blank"
     password: str = Field(min_length=8, max_length=128)
-    theme: Literal["matrix-dark", "matrix-light"] = "matrix-dark"
+    theme: Literal["matrix-dark", "matrix-light"] = "matrix-light"
     release_channel: Literal["stable", "beta", "nightly"] = "beta"
 
     @field_validator("callsign")

@@ -57,7 +57,7 @@ def read_station_settings() -> dict:
         settings = get_station_settings(conn)
     grid_square = settings.get("grid_square", "AA00aa")
     latitude, longitude = maidenhead_center(grid_square)
-    return {"callsign": settings.get("callsign", "N0CALL"), "grid_square": grid_square, "latitude": latitude, "longitude": longitude, "display_name": settings.get("display_name", "Dashboard Matrix"), "default_theme": settings.get("default_theme", "matrix-dark")}
+    return {"callsign": settings.get("callsign", "N0CALL"), "grid_square": grid_square, "latitude": latitude, "longitude": longitude, "display_name": settings.get("display_name", "Dashboard Matrix"), "default_theme": settings.get("default_theme", "matrix-light")}
 
 @router.put("/settings/station", response_model=StationSettingsResponse)
 async def update_station_settings(item: StationSettings, _: None = Depends(require_admin)) -> dict:
@@ -67,7 +67,7 @@ async def update_station_settings(item: StationSettings, _: None = Depends(requi
         conn.execute("INSERT INTO station_settings(key,value) VALUES('grid_square',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", (item.grid_square,))
         settings = get_station_settings(conn)
     await manager.broadcast({"event":"configuration_changed"})
-    return {"callsign": item.callsign, "grid_square": item.grid_square, "latitude": latitude, "longitude": longitude, "display_name": settings.get("display_name", "Dashboard Matrix"), "default_theme": settings.get("default_theme", "matrix-dark")}
+    return {"callsign": item.callsign, "grid_square": item.grid_square, "latitude": latitude, "longitude": longitude, "display_name": settings.get("display_name", "Dashboard Matrix"), "default_theme": settings.get("default_theme", "matrix-light")}
 
 @router.get("/dashboards", response_model=list[Dashboard])
 def list_dashboards(include_disabled: bool = False) -> list[dict]:
