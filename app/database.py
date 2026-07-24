@@ -207,7 +207,7 @@ def init_db() -> None:
             "callsign": "N0CALL",
             "grid_square": "AA00aa",
             "display_name": "Dashboard Matrix",
-            "default_theme": "matrix-dark",
+            "default_theme": "matrix-light",
             "release_channel": "beta",
             "update_repository": DEFAULT_UPDATE_REPOSITORY,
             "layout_share_repository": DEFAULT_EXCHANGE_REPOSITORY,

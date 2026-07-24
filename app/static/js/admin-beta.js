@@ -324,25 +324,62 @@
     }
   });
 
+  let defaultThemeId = "matrix-light";
+
+  function applyAdminTheme(themeId, rememberPreview = false) {
+    const link = el("theme-package");
+    if (link) link.href = `/themes/${encodeURIComponent(themeId)}.css`;
+    document.documentElement.dataset.themePackage = themeId;
+    if (rememberPreview) {
+      localStorage.setItem("dashboardMatrix.themePreview", themeId);
+    }
+  }
+
+  async function makeDefaultTheme(theme) {
+    const message = el("theme-package-message");
+    message.textContent = `Making ${theme.name} the site default…`;
+    try {
+      const result = await responseJson(await fetch("/api/themes/default", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ theme_id: theme.id }),
+      }));
+      defaultThemeId = result.default_theme;
+      localStorage.removeItem("dashboardMatrix.themePreview");
+      applyAdminTheme(defaultThemeId);
+      message.textContent = `${result.name} is now the site default.`;
+      await loadThemes();
+    } catch (error) {
+      message.textContent = `Unable to change the default theme: ${error.message}`;
+    }
+  }
+
   async function loadThemes() {
     const list = el("theme-package-list");
+    const message = el("theme-package-message");
     try {
       const themes = await responseJson(await fetch("/api/themes", { cache: "no-store" }));
+      defaultThemeId = themes.find((theme) => theme.is_default)?.id || "matrix-light";
       list.replaceChildren();
       for (const theme of themes) {
         const card = documentCreate("article");
-        card.className = "catalog-card";
-        card.innerHTML = `<div><span class="catalog-category">${escHtml(theme.color_scheme || "theme")}</span><h3>${escHtml(theme.name)}</h3><p>${escHtml(theme.description || "")}</p><small>${escHtml(theme.author || "Unknown")} · ${escHtml(theme.version || "0.0.0")}</small></div>`;
+        card.className = `catalog-card theme-package-card${theme.is_default ? " is-default" : ""}`;
+        card.innerHTML = `<div><div class="theme-card-badges"><span class="catalog-category">${escHtml(theme.color_scheme || "theme")}</span>${theme.is_default ? '<span class="catalog-category default-theme-badge">Site default</span>' : ""}</div><h3>${escHtml(theme.name)}</h3><p>${escHtml(theme.description || "")}</p><small>${escHtml(theme.author || "Unknown")} · ${escHtml(theme.version || "0.0.0")}</small></div>`;
         const actions = documentCreate("div");
         actions.className = "catalog-card-actions";
         const preview = documentCreate("button");
         preview.type = "button";
         preview.textContent = "Preview";
         preview.onclick = () => {
-          el("theme-package").href = theme.stylesheet_url;
-          localStorage.setItem("dashboardMatrix.themePreview", theme.id);
+          applyAdminTheme(theme.id, true);
+          message.textContent = `Previewing ${theme.name}. This preview affects only this browser.`;
         };
-        actions.append(preview);
+        const makeDefault = documentCreate("button");
+        makeDefault.type = "button";
+        makeDefault.textContent = theme.is_default ? "Current default" : "Make default";
+        makeDefault.disabled = Boolean(theme.is_default);
+        makeDefault.onclick = () => makeDefaultTheme(theme);
+        actions.append(preview, makeDefault);
         card.append(actions);
         list.append(card);
       }
@@ -350,6 +387,12 @@
       list.textContent = `Unable to load themes: ${error.message}`;
     }
   }
+
+  el("theme-use-default")?.addEventListener("click", () => {
+    localStorage.removeItem("dashboardMatrix.themePreview");
+    applyAdminTheme(defaultThemeId);
+    el("theme-package-message").textContent = "Administration is using the site default theme.";
+  });
 
   async function testProxy(sourceId) {
     const output = el("proxy-diagnostic-result");
@@ -472,7 +515,7 @@
     loadUpdateSettings();
     loadThemes();
     const previewTheme = localStorage.getItem("dashboardMatrix.themePreview");
-    if (previewTheme) el("theme-package").href = `/themes/${encodeURIComponent(previewTheme)}.css`;
+    if (previewTheme) applyAdminTheme(previewTheme);
     if (typeof loadProxySources === "function") loadProxySources();
     if (typeof loadPlugins === "function") loadPlugins();
   });

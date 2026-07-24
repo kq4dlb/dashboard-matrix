@@ -62,3 +62,13 @@ $("setup-form").addEventListener("submit", async (event) => {
 loadTemplates().catch((error) => {
   $("setup-message").textContent = error.message;
 });
+
+
+function previewSetupTheme() {
+  const themeId = $("setup-theme").value || "matrix-light";
+  const link = $("theme-package");
+  if (link) link.href = `/themes/${encodeURIComponent(themeId)}.css`;
+}
+
+$("setup-theme").addEventListener("change", previewSetupTheme);
+previewSetupTheme();

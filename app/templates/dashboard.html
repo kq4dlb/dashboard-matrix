@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#071525">
+  <meta name="theme-color" content="#f4f7fa">
   <title>Dashboard Matrix</title>
   <link rel="icon" href="/static/img/dashboard-matrix-mark.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/static/css/dashboard.css">
-  <link id="theme-package" rel="stylesheet" href="/themes/matrix-dark.css">
+  <link id="theme-package" rel="stylesheet" href="/themes/{{ default_theme | default("matrix-light") }}.css">
 </head>
 <body class="matrix-shell" data-dashboard-slug="{{ slug }}">
 <header class="app-header">
