@@ -1,20 +1,50 @@
 :root {
   color-scheme: light;
-  --matrix-bg: #eef3f7;
+  --matrix-bg: #f2f5f8;
   --matrix-header: #ffffff;
+  --matrix-header-start: #ffffff;
+  --matrix-header-end: #edf4f8;
   --matrix-sidebar: #f8fafc;
+  --matrix-canvas: #eef3f7;
   --panel: #ffffff;
   --panel-header: #edf3f7;
+  --card-bg: #f9fbfc;
+  --card-hover: #f2f7fa;
+  --surface-subtle: #edf3f7;
+  --surface-muted: #e5edf2;
   --border: #b9c7d1;
+  --border-strong: #8fa3b2;
+  --control-border: #9fb0bd;
   --text: #17222b;
   --muted: #526674;
   --accent: #006fa6;
+  --accent-strong: #00577f;
+  --accent-soft: #dceef7;
+  --live: #17804b;
   --button-bg: #e4edf3;
+  --button-hover: #d7e5ed;
   --input-bg: #ffffff;
+  --code-bg: #e8eef3;
+  --media-bg: #ffffff;
   --shadow: #4055662b;
+  --header-text: #17222b;
+  --header-muted: #526674;
+  --sidebar-muted: #5e7280;
+  --sidebar-active-bg: #dceef8;
+  --sidebar-active-border: #5b9fc5;
+  --sidebar-active-text: #12384d;
+  --layout-notice-bg: #e0f1fb;
+  --layout-notice-border: #7ab5d4;
+  --layout-notice-text: #183f54;
+  --tile-gradient-start: #ffffff;
+  --tile-gradient-end: #f7fafc;
+  --metric-bg: #eef3f6;
+  --metric-border: #d0dbe2;
+  --alert-bg: #fff4df;
+  --alert-border: #d58b18;
   --ok: #1b7f45;
   --warn: #9a6700;
   --bad: #b42318;
 }
+
 html, body { background: var(--matrix-bg) !important; color: var(--text) !important; }
-.tile iframe, .tile img { background: #fff; }
