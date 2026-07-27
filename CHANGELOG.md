@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.0-beta.1 — 2026-07-24
+
+- Automated version roll: Version display, update indicator, and automated release workflows.
+
+
 ## Unreleased
 
 - Reorganized Administration into accessible tabs for Overview, Dashboards & Cards, Layouts & Sharing, Sources & Catalog, and Extensions.

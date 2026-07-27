@@ -13,7 +13,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from app.api.routes import router
 from app.auth import authenticate, ensure_admin_password
 from app.collectors.hamqsl import collector_loop
-from app.database import init_db, is_setup_complete
+from app.database import connection, get_setting, init_db, is_setup_complete
 from app.layout_exports import router as layout_exports_router
 from app.layout_imports import router as layout_imports_router
 from app.map_adapter import router as map_adapter_router
@@ -24,7 +24,7 @@ from app.screenshots import router as screenshots_router
 from app.setup import router as setup_router
 from app.themes import router as themes_router
 from app.updates import router as updates_router, update_check_loop
-from app.version import APP_VERSION, PRODUCT_FULL_NAME
+from app.version import APP_VERSION, BUILD_COMMIT, PRODUCT_FULL_NAME
 from app.websocket import manager
 
 
@@ -102,11 +102,16 @@ async def first_run_gate(request: Request, call_next):
     return await call_next(request)
 
 
+def _default_theme() -> str:
+    with connection() as conn:
+        return get_setting(conn, "default_theme", "matrix-light")
+
+
 def _dashboard_response(request: Request, slug: str) -> HTMLResponse:
     return templates.TemplateResponse(
         request=request,
         name="dashboard.html",
-        context={"slug": slug, "app_version": APP_VERSION},
+        context={"slug": slug, "app_version": APP_VERSION, "default_theme": _default_theme()},
     )
 
 
@@ -115,7 +120,7 @@ def setup_page(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(
         request=request,
         name="setup.html",
-        context={"app_version": APP_VERSION},
+        context={"app_version": APP_VERSION, "default_theme": "matrix-light"},
     )
 
 
@@ -136,7 +141,7 @@ def admin(request: Request):
     return templates.TemplateResponse(
         request=request,
         name="admin.html",
-        context={"app_version": APP_VERSION},
+        context={"app_version": APP_VERSION, "default_theme": _default_theme()},
     )
 
 
@@ -147,7 +152,7 @@ def admin_login_page(request: Request):
     return templates.TemplateResponse(
         request=request,
         name="login.html",
-        context={"error": "", "app_version": APP_VERSION},
+        context={"error": "", "app_version": APP_VERSION, "default_theme": _default_theme()},
     )
 
 
@@ -162,6 +167,7 @@ def admin_login(request: Request, password: str = Form(...)):
         context={
             "error": "Incorrect password.",
             "app_version": APP_VERSION,
+            "default_theme": _default_theme(),
         },
         status_code=401,
     )
@@ -185,6 +191,7 @@ def health() -> dict[str, str | bool]:
         "status": "ok",
         "product": "dashboard-matrix",
         "version": APP_VERSION,
+        "build_commit": BUILD_COMMIT[:12] if BUILD_COMMIT else "",
         "setup_complete": is_setup_complete(),
     }
 

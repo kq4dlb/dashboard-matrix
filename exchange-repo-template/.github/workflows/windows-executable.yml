@@ -1,0 +1,36 @@
+name: Windows executable (manual)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Build executable
+        shell: pwsh
+        run: |
+          Set-Content -Path app/build_commit.txt -Value "${{ github.sha }}"
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller
+          pyinstaller --clean --noconfirm dashboard-matrix.spec
+      - name: Package manual build
+        shell: pwsh
+        run: |
+          $version = (Get-Content VERSION -Raw).Trim()
+          New-Item -ItemType Directory -Force release | Out-Null
+          Copy-Item dist/dashboard-matrix.exe release/dashboard-matrix.exe
+          Copy-Item README.md, LICENSE, RELEASE_NOTES.md, VERSION, version.json release/
+          Compress-Archive -Path release/* -DestinationPath "Dashboard-Matrix-Windows-x64-$version-manual.${{ github.run_number }}.zip" -Force
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dashboard-matrix-windows-manual
+          path: Dashboard-Matrix-Windows-x64-*.zip

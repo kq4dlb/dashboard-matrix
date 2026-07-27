@@ -9,6 +9,19 @@ editing, proxy diagnostics, plugins, themes, layout import/export, screenshot
 capture, and Exchange publishing. The Administration page is organized into five
 tabbed workspaces with keyboard navigation and remembered selection.
 
+This theme refinement makes Matrix Light the default for new installations, adds
+a persistent **Make default** action in Administration, and removes remaining
+hard-coded dark surfaces from catalog, provider, diagnostics, form, and card
+components. Existing installations can choose Matrix Light under
+**Administration → Overview → Theme packages**.
+
+
+This update adds the installed version to the dashboard header and displays a
+single upward-arrow icon when the selected GitHub release channel has a newer
+version. It also adds merge-driven version synchronization, annotated tags,
+automatic GitHub releases, source packages, Python packages, Windows executables,
+Raspberry Pi bundles, checksums, and categorized generated release notes.
+
 ## Important beta notes
 
 - Screenshot capture requires Playwright and a Chromium browser installation.

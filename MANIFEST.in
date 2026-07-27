@@ -1,6 +1,7 @@
-include LICENSE README.md CHANGELOG.md requirements*.txt docker-compose.yml Dockerfile
+include LICENSE README.md CHANGELOG.md VERSION version.json requirements*.txt docker-compose.yml Dockerfile
 recursive-include app/templates *.html
 recursive-include app/static *
+include app/build_commit.txt
 recursive-include docs *.md
 recursive-include plugins *
 recursive-include user_scripts *.py

@@ -1,4 +1,28 @@
-Dashboard Matrix 0.1.0-beta release contents
+Dashboard Matrix 0.1.0-beta.1 release contents
+
+Runtime version experience:
+- installed version in the dashboard title bar
+- simple update-available icon linked to the GitHub release
+- public cached update-status endpoint
+- stable, beta, and nightly release-channel support
+- build commit tracking for nightly comparisons
+
+Automated versioning:
+- version roll after every merged pull request
+- beta, patch, minor, major, and stable PR labels
+- synchronized VERSION, version.json, app/version.py, pyproject.toml, README, and changelog
+- annotated version tags
+- one-time version-label creation workflow
+
+Release automation:
+- automated tests and Python compilation
+- source ZIP and TAR.GZ
+- Python wheel and source distribution
+- Windows x64 executable bundle
+- Raspberry Pi install bundle
+- SHA-256 checksum artifacts
+- categorized generated release notes
+- prerelease detection from version tags
 
 Application:
 - dashboard and card engine
@@ -9,14 +33,3 @@ Application:
 - theme SDK and bundled dark/light themes
 - setup wizard and starter templates
 - layout import, export, screenshot, and publishing APIs
-- update channel checker
-
-Packaging:
-- Python source distribution metadata
-- Docker and Compose files
-- Linux and systemd installer assets
-- Windows PyInstaller spec and GitHub workflow
-- Raspberry Pi installer and optional image workflow
-- Dashboard Matrix Exchange repository template
-- tests and SDK documentation
-- validation report
