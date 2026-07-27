@@ -33,3 +33,6 @@ Application:
 - theme SDK and bundled dark/light themes
 - setup wizard and starter templates
 - layout import, export, screenshot, and publishing APIs
+docs/AUTOSTART.md
+scripts/manage-autostart.sh
+scripts/manage-autostart.ps1

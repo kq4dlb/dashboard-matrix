@@ -8,6 +8,8 @@ $Channel = if ($env:DASHBOARD_MATRIX_RELEASE_CHANNEL) { $env:DASHBOARD_MATRIX_RE
 $InstallDir = if ($env:DASHBOARD_MATRIX_INSTALL_DIR) { $env:DASHBOARD_MATRIX_INSTALL_DIR } else { "$env:ProgramFiles\Dashboard Matrix" }
 $StateDir = if ($env:DASHBOARD_MATRIX_STATE_DIR) { $env:DASHBOARD_MATRIX_STATE_DIR } else { "$env:ProgramData\Dashboard Matrix" }
 $TaskName = "Dashboard Matrix"
+$AutostartRaw = if ($env:DASHBOARD_MATRIX_AUTOSTART) { $env:DASHBOARD_MATRIX_AUTOSTART.ToLowerInvariant() } else { "1" }
+$Autostart = $AutostartRaw -notin @("0", "false", "no", "off")
 $DefaultPort = if ($env:DASHBOARD_MATRIX_DEFAULT_PORT) { [int]$env:DASHBOARD_MATRIX_DEFAULT_PORT } else { 8080 }
 $Port = if ($env:DASHBOARD_MATRIX_PORT) { [int]$env:DASHBOARD_MATRIX_PORT } else {
     $answer = Read-Host "Dashboard Matrix web port [$DefaultPort]"
@@ -45,9 +47,15 @@ if ($existing) {
 }
 if (Test-Path $InstallDir) { Remove-Item -Recurse -Force $InstallDir }
 $LogDir = Join-Path $StateDir "logs"
-New-Item -ItemType Directory -Force -Path \
-    $InstallDir, "$StateDir\data", "$StateDir\user_plugins", \
-    "$StateDir\user_scripts", "$StateDir\user_themes", $LogDir | Out-Null
+$Directories = @(
+    $InstallDir,
+    "$StateDir\data",
+    "$StateDir\user_plugins",
+    "$StateDir\user_scripts",
+    "$StateDir\user_themes",
+    $LogDir
+)
+New-Item -ItemType Directory -Force -Path $Directories | Out-Null
 Expand-Archive $temp -DestinationPath $InstallDir -Force
 
 $secret = ([guid]::NewGuid().ToString("N") + [guid]::NewGuid().ToString("N"))
@@ -71,11 +79,13 @@ set "DASHBOARD_MATRIX_USER_THEMES_DIR=$StateDir\user_themes"
 
 $action = New-ScheduledTaskAction -Execute "$env:SystemRoot\System32\cmd.exe" -Argument "/c `"$runner`""
 $trigger = New-ScheduledTaskTrigger -AtStartup
-$settings = New-ScheduledTaskSettingsSet -RestartCount 10 -RestartInterval (New-TimeSpan -Minutes 1) -ExecutionTimeLimit (New-TimeSpan -Days 3650)
-Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger -Settings $settings -User "SYSTEM" -RunLevel Highest -Force | Out-Null
+$settings = New-ScheduledTaskSettingsSet -RestartCount 10 -RestartInterval (New-TimeSpan -Minutes 1) -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Days 3650)
+if ($Autostart) {
+    Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger -Settings $settings -User "SYSTEM" -RunLevel Highest -Force | Out-Null
+}
 Get-NetFirewallRule -DisplayName "Dashboard Matrix TCP *" -ErrorAction SilentlyContinue | Remove-NetFirewallRule
 New-NetFirewallRule -DisplayName "Dashboard Matrix TCP $Port" -Direction Inbound -Protocol TCP -LocalPort $Port -Action Allow -Profile Private,Domain | Out-Null
-Start-ScheduledTask -TaskName $TaskName
+if ($Autostart) { Start-ScheduledTask -TaskName $TaskName }
 
 $ip = Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -notlike '127.*' -and $_.PrefixOrigin -ne 'WellKnown' } | Select-Object -First 1 -ExpandProperty IPAddress
 @"
@@ -84,7 +94,13 @@ Release: $($release.tag_name) ($Channel channel)
 Initial admin password: $password
 Application: $InstallDir
 Persistent state: $StateDir
+Autostart: $(if ($Autostart) { "enabled" } else { "disabled" })
 Standard output log: $stdout
 Standard error log: $stderr
 "@ | Set-Content "$StateDir\install-credentials.txt"
 Write-Host "Dashboard Matrix installed. Credentials: $StateDir\install-credentials.txt"
+if ($Autostart) {
+    Write-Host "Autostart is enabled through the Dashboard Matrix Scheduled Task."
+} else {
+    Write-Host "Autostart is disabled. Run scripts\manage-autostart.ps1 -Action Enable as Administrator to enable it."
+}

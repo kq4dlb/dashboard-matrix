@@ -23,6 +23,7 @@ shareable layouts in one independent open-source project.
 - Header version display with a GitHub update-available indicator
 - Automatic version roll, tagging, release notes, and release artifacts after each merge
 - Docker, Linux, Windows executable, and Raspberry Pi automation
+- Automatic startup after reboot on Linux, Raspberry Pi, Windows, and Docker
 - Tabbed Administration workspace with keyboard navigation and remembered sections
 
 ## Quick start
@@ -44,6 +45,21 @@ python matrix.py
 ```
 
 Open `http://127.0.0.1:8080/setup` and complete the first-run wizard.
+
+
+## Install with automatic startup
+
+Linux and Raspberry Pi installers enable Dashboard Matrix at boot by default:
+
+```bash
+sudo ./scripts/install.sh
+# Raspberry Pi OS
+sudo ./scripts/install-raspberry-pi.sh
+```
+
+Windows installs an at-startup Scheduled Task, and Docker Compose uses
+`restart: unless-stopped`. Manage or disable startup with the included
+platform scripts. See [Automatic startup](docs/AUTOSTART.md).
 
 ## Docker
 
@@ -92,6 +108,7 @@ pip install '.[station]'
 ## Documentation
 
 - [Administration interface](docs/ADMINISTRATION.md)
+- [Automatic startup](docs/AUTOSTART.md)
 - [Beta testing](docs/BETA_TESTING.md)
 - [Layout sharing](docs/LAYOUT_SHARING.md)
 - [Exchange repository](docs/EXCHANGE_REPOSITORY.md)

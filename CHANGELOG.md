@@ -7,6 +7,10 @@
 
 ## Unreleased
 
+- Standardized automatic startup after reboot across Linux, Raspberry Pi, Windows, and Docker.
+- Added Linux and Windows autostart management scripts for status, enable, disable, restart, and logs.
+- Added optional Raspberry Pi desktop kiosk startup and release packaging for startup-management assets.
+
 - Reorganized Administration into accessible tabs for Overview, Dashboards & Cards, Layouts & Sharing, Sources & Catalog, and Extensions.
 - Added keyboard navigation, URL hashes, and remembered tab selection.
 - Refined the Administration visual hierarchy, spacing, responsive behavior, and focus states.

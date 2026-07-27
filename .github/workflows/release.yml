@@ -1,0 +1,178 @@
+name: Build and publish release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing version tag to package, such as v0.1.0-beta.2
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: dashboard-matrix-release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag || github.ref_name }}
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: pip install -r requirements.txt pytest
+      - run: python -m compileall -q app scripts matrix.py
+      - run: pytest -q
+
+  source-packages:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag || github.ref_name }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Prepare build metadata
+        shell: bash
+        run: |
+          printf '%s\n' "$GITHUB_SHA" > app/build_commit.txt
+          python - <<'PY'
+          from app.version import APP_VERSION
+          print(APP_VERSION)
+          PY
+      - name: Build Python and source packages
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build
+          version="$(cat VERSION)"
+          root="Dashboard-Matrix-$version"
+          mkdir -p "release/staging/$root"
+          rsync -a ./ "release/staging/$root/" \
+            --exclude .git \
+            --exclude .pytest_cache \
+            --exclude .venv \
+            --exclude build \
+            --exclude dist \
+            --exclude release \
+            --exclude '*.egg-info' \
+            --exclude '__pycache__'
+          (cd release/staging && zip -qr "../Dashboard-Matrix-$version.zip" "$root")
+          tar -C release/staging -czf "release/Dashboard-Matrix-$version.tar.gz" "$root"
+          cp dist/* release/
+          (cd release && sha256sum Dashboard-Matrix-* kq4dlb_dashboard_matrix-* > "Dashboard-Matrix-$version.sha256")
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dashboard-matrix-source-${{ env.RELEASE_TAG }}
+          path: |
+            release/*.zip
+            release/*.tar.gz
+            release/*.whl
+            release/*.sha256
+          if-no-files-found: error
+
+  windows-executable:
+    needs: test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag || github.ref_name }}
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Build executable
+        shell: pwsh
+        run: |
+          Set-Content -Path app/build_commit.txt -Value "${{ github.sha }}"
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller
+          pyinstaller --clean --noconfirm dashboard-matrix.spec
+      - name: Package Windows bundle
+        shell: pwsh
+        run: |
+          $version = Get-Content VERSION -Raw
+          $version = $version.Trim()
+          New-Item -ItemType Directory -Force release/windows | Out-Null
+          Copy-Item dist/dashboard-matrix.exe release/windows/dashboard-matrix.exe
+          Copy-Item README.md, LICENSE, RELEASE_NOTES.md, VERSION, version.json release/
+          Copy-Item scripts/install-windows.ps1, scripts/manage-autostart.ps1 release/windows/
+          Compress-Archive -Path release/windows/* -DestinationPath "release/Dashboard-Matrix-Windows-x64-$version.zip" -Force
+          $hash = (Get-FileHash "release/Dashboard-Matrix-Windows-x64-$version.zip" -Algorithm SHA256).Hash.ToLower()
+          "$hash  Dashboard-Matrix-Windows-x64-$version.zip" | Set-Content "release/Dashboard-Matrix-Windows-x64-$version.sha256"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dashboard-matrix-windows-${{ env.RELEASE_TAG }}
+          path: |
+            release/Dashboard-Matrix-Windows-x64-*.zip
+            release/Dashboard-Matrix-Windows-x64-*.sha256
+          if-no-files-found: error
+
+  raspberry-pi-bundle:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag || github.ref_name }}
+      - name: Package Raspberry Pi installer
+        shell: bash
+        run: |
+          printf '%s\n' "$GITHUB_SHA" > app/build_commit.txt
+          version="$(cat VERSION)"
+          mkdir -p release/staging
+          rsync -a ./ release/staging/dashboard-matrix/ \
+            --exclude .git \
+            --exclude .pytest_cache \
+            --exclude .venv \
+            --exclude release \
+            --exclude '__pycache__'
+          tar -C release/staging -czf "release/Dashboard-Matrix-Raspberry-Pi-$version.tar.gz" dashboard-matrix
+          (cd release && sha256sum "Dashboard-Matrix-Raspberry-Pi-$version.tar.gz" > "Dashboard-Matrix-Raspberry-Pi-$version.sha256")
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dashboard-matrix-raspberry-pi-${{ env.RELEASE_TAG }}
+          path: |
+            release/Dashboard-Matrix-Raspberry-Pi-*.tar.gz
+            release/Dashboard-Matrix-Raspberry-Pi-*.sha256
+          if-no-files-found: error
+
+  publish:
+    needs: [source-packages, windows-executable, raspberry-pi-bundle]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          args=("$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --title "Dashboard Matrix $RELEASE_TAG" --generate-notes)
+          if [[ "$RELEASE_TAG" == *-* ]]; then
+            args+=(--prerelease)
+          fi
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" release-assets/* --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "${args[@]}" release-assets/*
+          fi
