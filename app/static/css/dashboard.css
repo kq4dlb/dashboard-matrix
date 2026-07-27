@@ -298,3 +298,4 @@ code, pre, .diagnostic-box, .analysis-box { background: var(--code-bg); color: v
 @media(max-width:760px) {
   .header-version { display: none; }
 }
+

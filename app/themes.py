@@ -5,14 +5,23 @@ import re
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
+from pydantic import BaseModel, Field
 
+from app.auth import require_admin
+from app.database import connection, get_setting, set_setting
 from app.paths import ROOT_DIR, user_themes_dir
+from app.websocket import manager
 
 router = APIRouter(tags=["themes"])
 THEME_ID = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 BUNDLED_THEME_DIR = ROOT_DIR / "themes"
+DEFAULT_THEME_ID = "matrix-light"
+
+
+class DefaultThemeUpdate(BaseModel):
+    theme_id: str = Field(pattern=r"^[a-z0-9][a-z0-9-]*$", max_length=80)
 
 
 def _theme_dirs() -> list[Path]:
@@ -38,7 +47,7 @@ def discover_themes() -> list[dict[str, Any]]:
                 manifest.setdefault("version", "0.0.0")
                 manifest.setdefault("author", "Unknown")
                 manifest.setdefault("description", "")
-                manifest.setdefault("color_scheme", "dark")
+                manifest.setdefault("color_scheme", "light")
                 manifest["_path"] = str(manifest_path.parent)
                 manifest["_css"] = str(css_path)
                 discovered[theme_id] = manifest
@@ -57,17 +66,46 @@ def get_theme(theme_id: str) -> dict[str, Any]:
     ) or _raise_theme(theme_id)
 
 
+def get_default_theme_id() -> str:
+    with connection() as conn:
+        configured = get_setting(conn, "default_theme", DEFAULT_THEME_ID)
+    try:
+        get_theme(configured)
+        return configured
+    except HTTPException:
+        return DEFAULT_THEME_ID
+
+
 def _raise_theme(theme_id: str):
     raise HTTPException(404, f"Theme not found: {theme_id}")
 
 
 @router.get("/api/themes")
 def list_themes() -> list[dict[str, Any]]:
+    default_theme = get_default_theme_id()
     return [
         {key: value for key, value in theme.items() if not key.startswith("_")}
-        | {"stylesheet_url": f"/themes/{theme['id']}.css"}
+        | {
+            "stylesheet_url": f"/themes/{theme['id']}.css",
+            "is_default": theme["id"] == default_theme,
+        }
         for theme in discover_themes()
     ]
+
+
+@router.put("/api/themes/default")
+async def update_default_theme(
+    item: DefaultThemeUpdate,
+    _: None = Depends(require_admin),
+) -> dict[str, str]:
+    theme = get_theme(item.theme_id)
+    with connection() as conn:
+        set_setting(conn, "default_theme", theme["id"])
+    await manager.broadcast({"event": "configuration_changed"})
+    return {
+        "default_theme": theme["id"],
+        "name": str(theme.get("name", theme["id"])),
+    }
 
 
 @router.get("/themes/{theme_id}.css")
