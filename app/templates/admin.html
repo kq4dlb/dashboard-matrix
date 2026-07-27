@@ -6,9 +6,10 @@
   <meta name="theme-color" content="#f4f7fa">
   <title>Dashboard Matrix Administration</title>
   <link rel="icon" href="/static/img/dashboard-matrix-mark.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/static/css/dashboard.css">
+  <link rel="stylesheet" href="/static/css/dashboard.css?v={{ app_version }}">
   <link id="theme-package" rel="stylesheet" href="/themes/{{ default_theme | default("matrix-light") }}.css">
-  <link rel="stylesheet" href="/static/css/admin-tabs.css">
+  <link rel="stylesheet" href="/static/css/admin-tabs.css?v={{ app_version }}">
+  <link rel="stylesheet" href="/static/css/theme-components.css?v={{ app_version }}">
 </head>
 <body class="admin-page">
 <header class="topbar admin-topbar">
@@ -312,8 +313,8 @@
   </div>
 </main>
 
-<script src="/static/js/admin-tabs.js" defer></script>
-<script src="/static/js/admin.js" defer></script>
-<script src="/static/js/admin-beta.js" defer></script>
+<script src="/static/js/admin-tabs.js?v={{ app_version }}" defer></script>
+<script src="/static/js/admin.js?v={{ app_version }}" defer></script>
+<script src="/static/js/admin-beta.js?v={{ app_version }}" defer></script>
 </body>
 </html>

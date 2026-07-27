@@ -6,8 +6,9 @@
   <meta name="theme-color" content="#f4f7fa">
   <title>Dashboard Matrix</title>
   <link rel="icon" href="/static/img/dashboard-matrix-mark.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/static/css/dashboard.css">
+  <link rel="stylesheet" href="/static/css/dashboard.css?v={{ app_version }}">
   <link id="theme-package" rel="stylesheet" href="/themes/{{ default_theme | default("matrix-light") }}.css">
+  <link rel="stylesheet" href="/static/css/theme-components.css?v={{ app_version }}">
 </head>
 <body class="matrix-shell" data-dashboard-slug="{{ slug }}" data-app-version="{{ app_version }}" data-default-theme="{{ default_theme | default("matrix-light") }}">
 <header class="app-header">
@@ -45,6 +46,6 @@
   <section class="content-area"><div id="layout-notice" class="layout-notice" hidden>Layout mode: drag card headers, resize from the lower-right corner, lock cards as needed, then save.</div><main id="dashboard-grid" class="dashboard-grid" aria-live="polite"></main></section>
 </div>
 <template id="tile-template"><section class="tile" draggable="false"><header class="tile-header"><h2 class="tile-title"></h2><div class="tile-meta"><button class="tile-lock" type="button" title="Lock card" aria-label="Lock card">🔓</button><span class="tile-state">LOADING</span><span class="tile-updated"></span></div></header><div class="tile-content"></div><button class="resize-handle" type="button" title="Resize card" aria-label="Resize card"></button></section></template>
-<script src="/static/js/dashboard.js" defer></script>
+<script src="/static/js/dashboard.js?v={{ app_version }}" defer></script>
 </body>
 </html>

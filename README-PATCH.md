@@ -1,16 +1,12 @@
-# Dashboard Matrix current-main merge repair
+# Apply the theme/title-bar repair
 
-Copy these files over the repository root, then run:
+Copy this directory over the repository root, then run:
 
 ```bash
 pytest -q
 python matrix.py
 ```
 
-The patch restores and verifies:
-
-- tabbed Administration assets
-- Matrix Light server default behavior
-- saved callsign, grid square, latitude, and longitude display
-- Admin saved-station summary
-- dashboard title-bar station values
+Perform one hard browser refresh after restarting the application. Static asset
+URLs now include the application version, so future releases should invalidate
+old CSS and JavaScript automatically.
