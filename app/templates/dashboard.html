@@ -9,15 +9,19 @@
   <link rel="stylesheet" href="/static/css/dashboard.css">
   <link id="theme-package" rel="stylesheet" href="/themes/{{ default_theme | default("matrix-light") }}.css">
 </head>
-<body class="matrix-shell" data-dashboard-slug="{{ slug }}" data-app-version="{{ app_version }}">
+<body class="matrix-shell" data-dashboard-slug="{{ slug }}" data-app-version="{{ app_version }}" data-default-theme="{{ default_theme | default("matrix-light") }}">
 <header class="app-header">
   <a class="brand" href="/" aria-label="Dashboard Matrix home">
     <img src="/static/img/dashboard-matrix-logo.svg" alt="KQ4DLB Dashboard Matrix">
   </a>
-  <div class="station-identity">
+  <div class="station-identity" aria-label="Saved station identity">
     <small id="dashboard-title">Dashboard</small>
     <strong id="station-callsign">—</strong>
-    <span id="station-grid">—</span>
+    <dl class="station-meta" aria-label="Station location">
+      <div><dt>Grid</dt><dd id="station-grid">—</dd></div>
+      <div><dt>Lat</dt><dd id="station-latitude">—</dd></div>
+      <div><dt>Long</dt><dd id="station-longitude">—</dd></div>
+    </dl>
     <i id="connection-state">Connecting…</i>
   </div>
   <div class="header-clock"><strong id="title-clock-time">--:--:--</strong><span id="title-clock-date">Loading date…</span></div>

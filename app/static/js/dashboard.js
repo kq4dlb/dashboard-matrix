@@ -1,9 +1,23 @@
 "use strict";
-let slug=document.body.dataset.dashboardSlug||"main", dashboard=null, dashboards=[], pageTimer=null, layoutMode=false, dragged=null, serverDefaultTheme="matrix-dark";
-const grid=document.getElementById("dashboard-grid"),title=document.getElementById("dashboard-title"),connectionState=document.getElementById("connection-state"),selector=document.getElementById("dashboard-selector"),timers=new Map(),stationCallsign=document.getElementById("station-callsign"),stationGrid=document.getElementById("station-grid"),titleClockTime=document.getElementById("title-clock-time"),titleClockDate=document.getElementById("title-clock-date");
+let slug=document.body.dataset.dashboardSlug||"main", dashboard=null, dashboards=[], pageTimer=null, layoutMode=false, dragged=null, serverDefaultTheme=document.body.dataset.defaultTheme||"matrix-light";
+const grid=document.getElementById("dashboard-grid"),title=document.getElementById("dashboard-title"),connectionState=document.getElementById("connection-state"),selector=document.getElementById("dashboard-selector"),timers=new Map(),stationCallsign=document.getElementById("station-callsign"),stationGrid=document.getElementById("station-grid"),stationLatitude=document.getElementById("station-latitude"),stationLongitude=document.getElementById("station-longitude"),titleClockTime=document.getElementById("title-clock-time"),titleClockDate=document.getElementById("title-clock-date");
 const dashboardNav=document.getElementById("dashboard-nav"),themeSelector=document.getElementById("theme-selector"),appVersion=document.body.dataset.appVersion||"",versionUpdateIndicator=document.getElementById("version-update-indicator");
 function updateTitleClock(){const n=new Date();titleClockTime.textContent=n.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",second:"2-digit"});titleClockDate.textContent=n.toLocaleDateString([], {weekday:"short",month:"short",day:"numeric",year:"numeric"})}
-async function loadStationSettings(){const r=await fetch('/api/settings/station',{cache:'no-store'});if(!r.ok)return;const d=await r.json();stationCallsign.textContent=d.callsign;stationGrid.textContent=`${d.grid_square} · ${d.latitude}, ${d.longitude}`;serverDefaultTheme=d.default_theme||"matrix-light";document.title=`${d.display_name||"Dashboard Matrix"} · v${appVersion}`}
+function stationValue(value,fallback="—"){const text=String(value??"").trim();return text||fallback}
+function coordinateValue(value){const number=Number(value);return Number.isFinite(number)?number.toFixed(6):"—"}
+async function loadStationSettings(){
+  const r=await fetch('/api/settings/station',{cache:'no-store'});
+  if(!r.ok)throw Error(`Unable to load station settings: HTTP ${r.status}`);
+  const d=await r.json();
+  stationCallsign.textContent=stationValue(d.callsign,"N0CALL");
+  stationGrid.textContent=stationValue(d.grid_square);
+  if(stationLatitude)stationLatitude.textContent=coordinateValue(d.latitude);
+  if(stationLongitude)stationLongitude.textContent=coordinateValue(d.longitude);
+  serverDefaultTheme=stationValue(d.default_theme,document.body.dataset.defaultTheme||"matrix-light");
+  document.body.dataset.defaultTheme=serverDefaultTheme;
+  document.title=`${stationValue(d.display_name,"Dashboard Matrix")} · v${appVersion}`;
+  return d;
+}
 async function loadUpdateStatus(){
   if(!versionUpdateIndicator)return;
   try{
@@ -125,7 +139,7 @@ document.getElementById("layout-mode").onclick=()=>setLayoutMode(!layoutMode);
 document.getElementById('pack-layout').onclick=()=>compactLayout();
 document.getElementById('reset-layout').onclick=()=>restoreLayout(originalLayout);
 document.getElementById("save-layout").onclick=async()=>{const payload=snapshotLayout().map(x=>({id:x.id,row_pos:x.row,col_pos:x.col,width:x.w,height:x.h,locked:x.locked}));const r=await fetch('/api/tiles/positions/batch',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});if(r.status===401){alert('Log in to Admin before saving the layout.');location.href='/admin';return}if(!r.ok){alert(`Unable to save layout: HTTP ${r.status}`);return}originalLayout=snapshotLayout();setLayoutMode(false);connectionState.textContent='Layout saved'};
-function connectWebSocket(){const p=location.protocol==='https:'?'wss':'ws',s=new WebSocket(`${p}://${location.host}/ws`);s.onopen=()=>{connectionState.textContent='Live connection';s.send('hello')};s.onmessage=e=>{const m=JSON.parse(e.data);if(m.event==='configuration_changed'&&!layoutMode){Promise.all([loadDashboardList(),loadStationSettings()]).then(loadDashboard).catch(showFatal)}};s.onclose=()=>{connectionState.textContent='Reconnecting…';setTimeout(connectWebSocket,3000)}}
+function connectWebSocket(){const p=location.protocol==='https:'?'wss':'ws',s=new WebSocket(`${p}://${location.host}/ws`);s.onopen=()=>{connectionState.textContent='Live connection';s.send('hello')};s.onmessage=e=>{const m=JSON.parse(e.data);if(m.event==='configuration_changed'&&!layoutMode){Promise.all([loadDashboardList(),loadStationSettings()]).then(()=>loadThemes()).then(loadDashboard).catch(showFatal)}};s.onclose=()=>{connectionState.textContent='Reconnecting…';setTimeout(connectWebSocket,3000)}}
 themeSelector.onchange=()=>applyTheme(themeSelector.value);
 (async()=>{updateTitleClock();setInterval(updateTitleClock,1000);setInterval(loadUpdateStatus,30*60*1000);await Promise.all([loadDashboardList(),loadStationSettings(),loadThemes(),loadUpdateStatus()]);await loadDashboard();connectWebSocket()})().catch(showFatal);
 import("/static/js/tile-title-mode.js").catch(error=>console.error("Tile title mode failed to load",error));

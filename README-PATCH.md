@@ -1,15 +1,16 @@
-# Dashboard Matrix autostart patch
+# Dashboard Matrix current-main merge repair
 
-Copy this directory over the repository root. It adds consistent automatic
-startup after reboot for Linux, Raspberry Pi, Windows, and Docker, plus optional
-Raspberry Pi kiosk launch and platform management scripts.
-
-Validate with:
+Copy these files over the repository root, then run:
 
 ```bash
 pytest -q
-bash -n scripts/install.sh scripts/install-raspberry-pi.sh scripts/manage-autostart.sh scripts/kiosk.sh
+python matrix.py
 ```
 
-The repository's merge-version workflow should create the next version after
-this patch is merged; the patch does not manually change VERSION.
+The patch restores and verifies:
+
+- tabbed Administration assets
+- Matrix Light server default behavior
+- saved callsign, grid square, latitude, and longitude display
+- Admin saved-station summary
+- dashboard title-bar station values
