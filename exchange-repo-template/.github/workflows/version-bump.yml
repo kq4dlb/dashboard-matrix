@@ -1,0 +1,79 @@
+name: Roll version after merge
+
+on:
+  pull_request_target:
+    types: [closed]
+    branches: [main]
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: dashboard-matrix-version-roll
+  cancel-in-progress: false
+
+jobs:
+  bump-version:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    env:
+      PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      PR_TITLE: ${{ github.event.pull_request.title }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install validation dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pytest
+      - name: Select version roll
+        id: bump
+        shell: bash
+        run: |
+          bump="beta"
+          case ",${PR_LABELS}," in
+            *,version:stable,*) bump="stable" ;;
+            *,version:major,*)  bump="major" ;;
+            *,version:minor,*)  bump="minor" ;;
+            *,version:patch,*)  bump="patch" ;;
+            *,version:beta,*)   bump="beta" ;;
+          esac
+          echo "bump=$bump" >> "$GITHUB_OUTPUT"
+      - name: Synchronize version files
+        id: version
+        shell: bash
+        run: |
+          new_version="$(python scripts/bump_version.py \
+            --bump '${{ steps.bump.outputs.bump }}' \
+            --pr-number "$PR_NUMBER" \
+            --summary "$PR_TITLE")"
+          echo "version=$new_version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$new_version" >> "$GITHUB_OUTPUT"
+      - name: Validate rolled source
+        run: |
+          python -m compileall -q app scripts matrix.py
+          pytest -q
+      - name: Commit and tag version
+        shell: bash
+        run: |
+          git config user.name "dashboard-matrix-release-bot"
+          git config user.email "dashboard-matrix-release-bot@users.noreply.github.com"
+          git add VERSION version.json app/version.py pyproject.toml README.md CHANGELOG.md
+          git commit -m "chore(release): v${{ steps.version.outputs.version }} [skip ci]"
+          git tag -a "${{ steps.version.outputs.tag }}" -m "Dashboard Matrix ${{ steps.version.outputs.tag }}"
+          git push origin HEAD:main --follow-tags
+      - name: Start release build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run release.yml \
+            --ref "${{ steps.version.outputs.tag }}" \
+            -f tag="${{ steps.version.outputs.tag }}"

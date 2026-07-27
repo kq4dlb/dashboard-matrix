@@ -41,7 +41,7 @@ include-package-data = true
 include = ["app*", "plugins", "themes", "user_scripts"]
 
 [tool.setuptools.package-data]
-app = ["templates/*.html", "static/**/*"]
+app = ["templates/*.html", "static/**/*", "build_commit.txt"]
 plugins = ["**/*"]
 themes = ["**/*"]
 user_scripts = ["*.py"]

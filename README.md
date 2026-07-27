@@ -1,6 +1,6 @@
 # KQ4DLB Dashboard Matrix
 
-**Version 0.1.0-beta**
+**Version 0.1.0-beta.1**
 
 Dashboard Matrix is a lightweight, self-hosted dashboard platform created by
 Marc Smith (KQ4DLB). It combines configurable dashboards, movable and resizable
@@ -18,8 +18,10 @@ shareable layouts in one independent open-source project.
 - Controlled proxy sources with per-source diagnostics
 - Plugin permission approvals and environment-variable secret mappings
 - General map-provider SDK with DX Cluster as a separate provider
-- Theme package SDK with Matrix Dark and Matrix Light
+- Theme package SDK with Matrix Light as the default and Matrix Dark for low-light use
 - Stable, beta, and nightly update channels
+- Header version display with a GitHub update-available indicator
+- Automatic version roll, tagging, release notes, and release artifacts after each merge
 - Docker, Linux, Windows executable, and Raspberry Pi automation
 - Tabbed Administration workspace with keyboard navigation and remembered sections
 
@@ -98,6 +100,15 @@ pip install '.[station]'
 - [Map-provider SDK](docs/MAP_PROVIDER_SDK.md)
 - [Theme SDK](docs/THEME_SDK.md)
 - [Station integrations](docs/STATION_INTEGRATIONS.md)
+
+## Versioning and releases
+
+Every pull request merged into `main` automatically rolls the version, runs the
+test suite, creates a version tag, and starts the release build. The default
+behavior increments the beta serial; version labels can request patch, minor,
+major, or stable releases.
+
+See [Versioning and automated releases](docs/VERSIONING_AND_RELEASES.md).
 
 ## License
 

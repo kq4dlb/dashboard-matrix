@@ -1,0 +1,23 @@
+name: Create version labels
+
+on:
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  labels:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create or update release labels
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        shell: bash
+        run: |
+          gh label create "version:beta" --repo "$REPOSITORY" --color "7057ff" --description "Increment the beta serial (default)" --force
+          gh label create "version:patch" --repo "$REPOSITORY" --color "0e8a16" --description "Increment patch and restart beta serial" --force
+          gh label create "version:minor" --repo "$REPOSITORY" --color "1d76db" --description "Increment minor and restart beta serial" --force
+          gh label create "version:major" --repo "$REPOSITORY" --color "b60205" --description "Increment major and restart beta serial" --force
+          gh label create "version:stable" --repo "$REPOSITORY" --color "fbca04" --description "Promote the current version to stable" --force

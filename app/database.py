@@ -172,7 +172,10 @@ def init_db() -> None:
                 latest_version TEXT NOT NULL DEFAULT '',
                 update_available INTEGER NOT NULL DEFAULT 0,
                 release_url TEXT NOT NULL DEFAULT '',
-                message TEXT NOT NULL DEFAULT ''
+                message TEXT NOT NULL DEFAULT '',
+                published_at TEXT NOT NULL DEFAULT '',
+                prerelease INTEGER NOT NULL DEFAULT 0,
+                error TEXT NOT NULL DEFAULT ''
             );
             """
         )
@@ -181,6 +184,20 @@ def init_db() -> None:
         if "locked" not in tile_columns:
             conn.execute(
                 "ALTER TABLE tiles ADD COLUMN locked INTEGER NOT NULL DEFAULT 0"
+            )
+
+        update_columns = _columns(conn, "update_checks")
+        if "published_at" not in update_columns:
+            conn.execute(
+                "ALTER TABLE update_checks ADD COLUMN published_at TEXT NOT NULL DEFAULT ''"
+            )
+        if "prerelease" not in update_columns:
+            conn.execute(
+                "ALTER TABLE update_checks ADD COLUMN prerelease INTEGER NOT NULL DEFAULT 0"
+            )
+        if "error" not in update_columns:
+            conn.execute(
+                "ALTER TABLE update_checks ADD COLUMN error TEXT NOT NULL DEFAULT ''"
             )
 
         dashboard_columns = _columns(conn, "dashboards")

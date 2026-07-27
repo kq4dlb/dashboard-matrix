@@ -31,6 +31,8 @@ def test_dashboard_and_admin_after_setup(configured_client: TestClient):
     assert root.status_code == 200
     assert "dashboard-grid" in root.text
     assert "Dashboard Matrix" in root.text
+    assert "v0.1.0-beta.1" in root.text
+    assert "version-update-indicator" in root.text
     assert configured_client.get("/setup", follow_redirects=False).status_code == 303
     page = configured_client.get("/admin")
     assert page.status_code == 200
@@ -42,7 +44,7 @@ def test_health(fresh_client: TestClient):
     data = fresh_client.get("/health").json()
     assert data["status"] == "ok"
     assert data["product"] == "dashboard-matrix"
-    assert data["version"] == "0.1.0-beta"
+    assert data["version"] == "0.1.0-beta.1"
 
 
 def test_maidenhead_center():

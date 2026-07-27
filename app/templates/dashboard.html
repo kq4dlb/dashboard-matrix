@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="/static/css/dashboard.css">
   <link id="theme-package" rel="stylesheet" href="/themes/{{ default_theme | default("matrix-light") }}.css">
 </head>
-<body class="matrix-shell" data-dashboard-slug="{{ slug }}">
+<body class="matrix-shell" data-dashboard-slug="{{ slug }}" data-app-version="{{ app_version }}">
 <header class="app-header">
   <a class="brand" href="/" aria-label="Dashboard Matrix home">
     <img src="/static/img/dashboard-matrix-logo.svg" alt="KQ4DLB Dashboard Matrix">
@@ -21,7 +21,13 @@
     <i id="connection-state">Connecting…</i>
   </div>
   <div class="header-clock"><strong id="title-clock-time">--:--:--</strong><span id="title-clock-date">Loading date…</span></div>
-  <div class="header-actions"><button id="refresh-all" type="button" title="Refresh dashboard">↻</button><button id="layout-mode" type="button">Layout</button><a class="icon-button" href="/admin" title="Administration">⚙</a></div>
+  <div class="header-actions">
+    <span class="header-version" id="installed-version" title="Installed Dashboard Matrix version">v{{ app_version }}</span>
+    <a id="version-update-indicator" class="version-update-indicator" href="#" target="_blank" rel="noopener" hidden aria-label="A Dashboard Matrix update is available">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 18V6m0 0-5 5m5-5 5 5"/></svg>
+    </a>
+    <button id="refresh-all" type="button" title="Refresh dashboard">↻</button><button id="layout-mode" type="button">Layout</button><a class="icon-button" href="/admin" title="Administration">⚙</a>
+  </div>
 </header>
 <div class="workspace">
   <aside class="sidebar">
@@ -30,7 +36,6 @@
     <div class="sidebar-tools">
       <button id="pack-layout" type="button" hidden>Pack cards</button><button id="reset-layout" type="button" hidden>Reset</button><button id="save-layout" type="button" hidden>Save layout</button>
       <label>Theme<select id="theme-selector"><option value="matrix-dark">Matrix Dark</option><option value="matrix-light">Matrix Light</option></select></label>
-      <small>Dashboard Matrix {{ app_version }}</small>
     </div>
   </aside>
   <section class="content-area"><div id="layout-notice" class="layout-notice" hidden>Layout mode: drag card headers, resize from the lower-right corner, lock cards as needed, then save.</div><main id="dashboard-grid" class="dashboard-grid" aria-live="polite"></main></section>

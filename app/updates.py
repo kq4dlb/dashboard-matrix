@@ -11,11 +11,12 @@ from typing import Any, Literal
 from packaging.version import InvalidVersion, Version
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from app.auth import require_admin
 from app.database import connection, get_setting, set_setting
-from app.version import APP_VERSION, DEFAULT_UPDATE_REPOSITORY
+from app.version import APP_VERSION, BUILD_COMMIT, DEFAULT_UPDATE_REPOSITORY
 
 router = APIRouter(prefix="/api/updates", tags=["updates"])
 
@@ -68,11 +69,7 @@ def _release_candidate(repository: str, channel: str) -> dict[str, Any]:
             raise RuntimeError("GitHub returned no commits")
         commit = commits[0]
         sha = str(commit.get("sha", ""))
-        date = (
-            commit.get("commit", {})
-            .get("committer", {})
-            .get("date", "")
-        )
+        date = commit.get("commit", {}).get("committer", {}).get("date", "")
         return {
             "version": f"nightly-{sha[:7]}",
             "url": commit.get("html_url", ""),
@@ -118,19 +115,81 @@ def read_settings() -> dict[str, Any]:
         }
 
 
+def _update_is_available(channel: str, candidate: dict[str, Any]) -> bool:
+    if channel == "nightly":
+        latest_sha = str(candidate.get("nightly_sha", ""))
+        return not BUILD_COMMIT or not latest_sha.startswith(BUILD_COMMIT)
+    return _version(str(candidate["version"])) > _version(APP_VERSION)
+
+
+def _store_result(result: dict[str, Any]) -> None:
+    with connection() as conn:
+        conn.execute(
+            """
+            INSERT INTO update_checks(
+                id,checked_at,channel,current_version,latest_version,
+                update_available,release_url,message,published_at,
+                prerelease,error
+            ) VALUES(1,?,?,?,?,?,?,?,?,?,?)
+            ON CONFLICT(id) DO UPDATE SET
+                checked_at=excluded.checked_at,
+                channel=excluded.channel,
+                current_version=excluded.current_version,
+                latest_version=excluded.latest_version,
+                update_available=excluded.update_available,
+                release_url=excluded.release_url,
+                message=excluded.message,
+                published_at=excluded.published_at,
+                prerelease=excluded.prerelease,
+                error=excluded.error
+            """,
+            (
+                result["checked_at"],
+                result["channel"],
+                APP_VERSION,
+                result.get("latest_version", ""),
+                int(bool(result.get("update_available"))),
+                result.get("release_url", ""),
+                result.get("message", ""),
+                result.get("published_at", ""),
+                int(bool(result.get("prerelease"))),
+                result.get("error", ""),
+            ),
+        )
+
+
+def _store_error(error: Exception) -> None:
+    settings = read_settings()
+    _store_result(
+        {
+            "checked_at": datetime.now(timezone.utc).isoformat(),
+            "channel": settings["channel"],
+            "latest_version": "",
+            "update_available": False,
+            "release_url": "",
+            "published_at": "",
+            "prerelease": False,
+            "message": "The GitHub update check could not be completed.",
+            "error": str(error)[:1000],
+        }
+    )
+
+
 def check_for_updates() -> dict[str, Any]:
     settings = read_settings()
     channel = settings["channel"]
     repository = settings["repository"]
     candidate = _release_candidate(repository, channel)
+    latest = candidate["version"]
+    update_available = _update_is_available(channel, candidate)
 
     if channel == "nightly":
-        latest = candidate["version"]
-        update_available = True
-        message = "A newer nightly commit may be available. Review the commit before installing."
+        message = (
+            "A newer nightly commit is available."
+            if update_available
+            else "This installation matches the latest nightly commit."
+        )
     else:
-        latest = candidate["version"]
-        update_available = _version(latest) > _version(APP_VERSION)
         message = (
             f"Dashboard Matrix {latest} is available."
             if update_available
@@ -142,40 +201,72 @@ def check_for_updates() -> dict[str, Any]:
         "channel": channel,
         "repository": repository,
         "current_version": APP_VERSION,
+        "build_commit": BUILD_COMMIT,
         "latest_version": latest,
         "update_available": update_available,
         "release_url": candidate.get("url", ""),
         "published_at": candidate.get("published_at", ""),
+        "prerelease": bool(candidate.get("prerelease")),
         "message": message,
         "notes": candidate.get("notes", ""),
+        "error": "",
     }
-    with connection() as conn:
-        conn.execute(
-            """
-            INSERT INTO update_checks(
-                id,checked_at,channel,current_version,latest_version,
-                update_available,release_url,message
-            ) VALUES(1,?,?,?,?,?,?,?)
-            ON CONFLICT(id) DO UPDATE SET
-                checked_at=excluded.checked_at,
-                channel=excluded.channel,
-                current_version=excluded.current_version,
-                latest_version=excluded.latest_version,
-                update_available=excluded.update_available,
-                release_url=excluded.release_url,
-                message=excluded.message
-            """,
-            (
-                result["checked_at"],
-                channel,
-                APP_VERSION,
-                latest,
-                int(update_available),
-                result["release_url"],
-                message,
-            ),
-        )
+    _store_result(result)
     return result
+
+
+def public_update_status() -> dict[str, Any]:
+    settings = read_settings()
+    with connection() as conn:
+        row = conn.execute("SELECT * FROM update_checks WHERE id=1").fetchone()
+    if not row:
+        return {
+            "state": "unknown",
+            "current_version": APP_VERSION,
+            "latest_version": "",
+            "update_available": False,
+            "release_url": "",
+            "channel": settings["channel"],
+            "automatic_checks": settings["automatic_checks"],
+            "checked_at": None,
+            "message": "No update check has completed yet.",
+        }
+
+    result = dict(row)
+    result.pop("id", None)
+    result["current_version"] = APP_VERSION
+    result["update_available"] = bool(result.get("update_available"))
+    if (
+        not result.get("error")
+        and result.get("latest_version")
+        and result.get("channel") != "nightly"
+    ):
+        try:
+            result["update_available"] = (
+                _version(str(result["latest_version"])) > _version(APP_VERSION)
+            )
+        except RuntimeError:
+            result["update_available"] = False
+    result["prerelease"] = bool(result.get("prerelease"))
+    result["automatic_checks"] = settings["automatic_checks"]
+    result["state"] = (
+        "error"
+        if result.get("error")
+        else "available"
+        if result["update_available"]
+        else "current"
+    )
+    # Do not expose internal exception details on the unauthenticated endpoint.
+    result.pop("error", None)
+    return result
+
+
+@router.get("/status")
+def get_public_update_status() -> JSONResponse:
+    return JSONResponse(
+        public_update_status(),
+        headers={"Cache-Control": "no-store"},
+    )
 
 
 @router.get("/settings")
@@ -187,6 +278,9 @@ def get_update_settings(_: None = Depends(require_admin)) -> dict[str, Any]:
     if settings["last_check"]:
         settings["last_check"]["update_available"] = bool(
             settings["last_check"]["update_available"]
+        )
+        settings["last_check"]["prerelease"] = bool(
+            settings["last_check"].get("prerelease")
         )
     return settings
 
@@ -212,6 +306,7 @@ def manual_update_check(_: None = Depends(require_admin)) -> dict[str, Any]:
     try:
         return check_for_updates()
     except RuntimeError as exc:
+        _store_error(exc)
         raise HTTPException(502, str(exc)) from exc
 
 
@@ -223,6 +318,6 @@ async def update_check_loop() -> None:
         ):
             try:
                 await asyncio.to_thread(check_for_updates)
-            except Exception:
-                pass
+            except Exception as exc:
+                await asyncio.to_thread(_store_error, exc)
         await asyncio.sleep(CHECK_INTERVAL_SECONDS)

@@ -24,7 +24,7 @@ from app.screenshots import router as screenshots_router
 from app.setup import router as setup_router
 from app.themes import router as themes_router
 from app.updates import router as updates_router, update_check_loop
-from app.version import APP_VERSION, PRODUCT_FULL_NAME
+from app.version import APP_VERSION, BUILD_COMMIT, PRODUCT_FULL_NAME
 from app.websocket import manager
 
 
@@ -191,6 +191,7 @@ def health() -> dict[str, str | bool]:
         "status": "ok",
         "product": "dashboard-matrix",
         "version": APP_VERSION,
+        "build_commit": BUILD_COMMIT[:12] if BUILD_COMMIT else "",
         "setup_complete": is_setup_complete(),
     }
 

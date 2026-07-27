@@ -254,3 +254,48 @@ code, pre, .diagnostic-box, .analysis-box { background: var(--code-bg); color: v
 .theme-package-card.is-default { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent); }
 .theme-card-badges { display: flex; flex-wrap: wrap; gap: .4rem; }
 .default-theme-badge { background: var(--accent); border-color: var(--accent); color: var(--matrix-header, #fff); }
+
+/* Runtime version and update status */
+.header-actions { align-items: center; }
+.header-version {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 .25rem;
+  color: var(--header-muted, var(--muted));
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  white-space: nowrap;
+}
+.version-update-indicator {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid color-mix(in srgb, var(--warn) 65%, var(--border));
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--warn) 17%, var(--matrix-header));
+  color: var(--warn);
+  text-decoration: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--warn) 10%, transparent);
+}
+.version-update-indicator[hidden] { display: none; }
+.version-update-indicator:hover,
+.version-update-indicator:focus-visible {
+  background: color-mix(in srgb, var(--warn) 27%, var(--matrix-header));
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--warn) 18%, transparent);
+}
+.version-update-indicator svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+@media(max-width:760px) {
+  .header-version { display: none; }
+}
+
