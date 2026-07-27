@@ -26,7 +26,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ inputs.tag || github.ref_name }}
+          ref: ${{ env.RELEASE_TAG }}
+          fetch-depth: 0
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
@@ -42,7 +43,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ inputs.tag || github.ref_name }}
+          ref: ${{ env.RELEASE_TAG }}
           fetch-depth: 0
       - uses: actions/setup-python@v7
         with:
@@ -93,7 +94,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ inputs.tag || github.ref_name }}
+          ref: ${{ env.RELEASE_TAG }}
+          fetch-depth: 0
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
@@ -131,7 +133,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ inputs.tag || github.ref_name }}
+          ref: ${{ env.RELEASE_TAG }}
+          fetch-depth: 0
       - name: Package Raspberry Pi installer
         shell: bash
         run: |
