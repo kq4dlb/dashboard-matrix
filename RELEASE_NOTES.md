@@ -31,3 +31,12 @@ Raspberry Pi bundles, checksums, and categorized generated release notes.
   system security sandbox.
 - The Raspberry Pi full-image job is optional and requires a compatible
   self-hosted ARM64 runner; the normal Raspberry Pi installer is included.
+
+
+## Automatic startup
+
+- Linux and Raspberry Pi installations use an enabled systemd service.
+- Windows installations use an at-startup Scheduled Task.
+- Docker Compose uses the `unless-stopped` restart policy.
+- Linux and Windows management scripts provide status, enable, disable, restart, and log actions.
+- Raspberry Pi Desktop installations can optionally launch Chromium in kiosk mode after login.

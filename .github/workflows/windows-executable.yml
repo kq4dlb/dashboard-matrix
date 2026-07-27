@@ -1,12 +1,10 @@
-name: Windows executable
+name: Windows executable (manual)
 
 on:
   workflow_dispatch:
-  push:
-    tags: ["v*"]
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
@@ -17,36 +15,23 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-      - run: python -m pip install --upgrade pip
-      - run: pip install -r requirements.txt pyinstaller
-      - run: pyinstaller --clean --noconfirm dashboard-matrix.spec
-      - name: Package Windows bundle
+      - name: Build executable
         shell: pwsh
         run: |
-          $version = if ("${{ github.ref_type }}" -eq "tag") {
-            "${{ github.ref_name }}"
-          } else {
-            "v0.1.0-beta-build.${{ github.run_number }}"
-          }
+          Set-Content -Path app/build_commit.txt -Value "${{ github.sha }}"
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller
+          pyinstaller --clean --noconfirm dashboard-matrix.spec
+      - name: Package manual build
+        shell: pwsh
+        run: |
+          $version = (Get-Content VERSION -Raw).Trim()
           New-Item -ItemType Directory -Force release | Out-Null
           Copy-Item dist/dashboard-matrix.exe release/dashboard-matrix.exe
-          Copy-Item README.md, LICENSE, RELEASE_NOTES.md release/
-          Compress-Archive -Path release/* -DestinationPath "Dashboard-Matrix-Windows-x64-$version.zip" -Force
-          (Get-FileHash "Dashboard-Matrix-Windows-x64-$version.zip" -Algorithm SHA256).Hash.ToLower() + "  Dashboard-Matrix-Windows-x64-$version.zip" | Set-Content "Dashboard-Matrix-Windows-x64-$version.sha256"
+          Copy-Item README.md, LICENSE, RELEASE_NOTES.md, VERSION, version.json release/
+          Copy-Item scripts/install-windows.ps1, scripts/manage-autostart.ps1 release/
+          Compress-Archive -Path release/* -DestinationPath "Dashboard-Matrix-Windows-x64-$version-manual.${{ github.run_number }}.zip" -Force
       - uses: actions/upload-artifact@v4
         with:
-          name: dashboard-matrix-windows-x64
-          path: |
-            Dashboard-Matrix-Windows-x64-*.zip
-            Dashboard-Matrix-Windows-x64-*.sha256
-      - name: Attach bundle to GitHub release
-        if: github.ref_type == 'tag'
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release view "${{ github.ref_name }}" *> $null
-          if ($LASTEXITCODE -ne 0) {
-            gh release create "${{ github.ref_name }}" --title "Dashboard Matrix ${{ github.ref_name }}" --generate-notes --prerelease
-          }
-          gh release upload "${{ github.ref_name }}" Dashboard-Matrix-Windows-x64-*.zip Dashboard-Matrix-Windows-x64-*.sha256 --clobber
+          name: dashboard-matrix-windows-manual
+          path: Dashboard-Matrix-Windows-x64-*.zip

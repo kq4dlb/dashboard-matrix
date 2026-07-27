@@ -5,6 +5,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 GEN_HOME="${RPI_IMAGE_GEN_HOME:-$HOME/rpi-image-gen}"
 CONFIG="${RPI_IMAGE_CONFIG:-$GEN_HOME/config/trixie-minbase.yaml}"
 OUTPUT_DIR="${DASHBOARD_MATRIX_IMAGE_OUTPUT:-$ROOT/dist/raspberry-pi}"
+VERSION="$(cat "$ROOT/VERSION")"
 
 command -v git >/dev/null
 command -v virt-customize >/dev/null || {
@@ -51,7 +52,7 @@ virt-customize -a "$IMAGE" --network \
   --run-command 'systemctl enable dashboard-matrix.service avahi-daemon.service' \
   --run-command 'rm -f /tmp/dashboard-matrix.tar.gz'
 
-TARGET="$OUTPUT_DIR/dashboard-matrix-0.1.0-beta-rpi-arm64.img"
+TARGET="$OUTPUT_DIR/dashboard-matrix-${VERSION}-rpi-arm64.img"
 cp "$IMAGE" "$TARGET"
 xz -T0 -f "$TARGET"
 sha256sum "$TARGET.xz" >"$TARGET.xz.sha256"
