@@ -18,6 +18,7 @@ from app.layout_exports import router as layout_exports_router
 from app.layout_imports import router as layout_imports_router
 from app.map_adapter import router as map_adapter_router
 from app.paths import static_dir, templates_dir
+from app.plugin_manager import shutdown_plugin_workers
 from app.proxy import fetch_proxied
 from app.proxy_diagnostics import router as proxy_diagnostics_router
 from app.screenshots import router as screenshots_router
@@ -57,6 +58,7 @@ async def lifespan(_: FastAPI):
     for task in tasks:
         with suppress(asyncio.CancelledError):
             await task
+    await asyncio.to_thread(shutdown_plugin_workers)
 
 
 app = FastAPI(

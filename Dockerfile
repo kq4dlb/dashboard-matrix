@@ -1,4 +1,5 @@
 FROM python:3.12-slim-bookworm
+ARG DASHBOARD_MATRIX_INSTALL_ICOM_IP=0
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
     DASHBOARD_MATRIX_DATA_DIR=/var/lib/dashboard-matrix/data \
     DASHBOARD_MATRIX_USER_PLUGINS_DIR=/var/lib/dashboard-matrix/user_plugins \
@@ -8,6 +9,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
 WORKDIR /app
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt \
+    && if [ "$DASHBOARD_MATRIX_INSTALL_ICOM_IP" = "1" ]; then \
+         apt-get update \
+         && apt-get install -y --no-install-recommends libopus0 libportaudio2 \
+         && rm -rf /var/lib/apt/lists/* \
+         && pip install --no-cache-dir "rigplane>=2.11,<3.0"; \
+       fi \
     && useradd --system --uid 10001 --create-home matrix
 COPY . .
 RUN mkdir -p /var/lib/dashboard-matrix/data /var/lib/dashboard-matrix/user_plugins /var/lib/dashboard-matrix/user_scripts /var/lib/dashboard-matrix/user_themes \

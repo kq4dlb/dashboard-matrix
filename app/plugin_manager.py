@@ -1,10 +1,15 @@
 from __future__ import annotations
 
+import atexit
+import hashlib
 import json
 import os
+import queue
 import re
 import subprocess
 import sys
+import threading
+from collections import deque
 from pathlib import Path
 from typing import Any
 
@@ -142,6 +147,228 @@ def _secret_environment(
     return environment
 
 
+class _PersistentPluginWorker:
+    def __init__(
+        self,
+        *,
+        worker_script: Path,
+        plugin_root: Path,
+        environment: dict[str, str],
+    ) -> None:
+        self._lock = threading.Lock()
+        self._responses: queue.Queue[str | None] = queue.Queue()
+        self._stderr_lines: deque[str] = deque(maxlen=80)
+        self._process = subprocess.Popen(
+            [sys.executable, "-I", str(worker_script), "--persistent"],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            bufsize=1,
+            env=environment,
+            cwd=str(plugin_root),
+        )
+        self._stdout_thread = threading.Thread(
+            target=self._read_stdout,
+            name="dashboard-plugin-stdout",
+            daemon=True,
+        )
+        self._stderr_thread = threading.Thread(
+            target=self._read_stderr,
+            name="dashboard-plugin-stderr",
+            daemon=True,
+        )
+        self._stdout_thread.start()
+        self._stderr_thread.start()
+
+    @property
+    def alive(self) -> bool:
+        return self._process.poll() is None
+
+    def _read_stdout(self) -> None:
+        assert self._process.stdout is not None
+        try:
+            for line in self._process.stdout:
+                self._responses.put(line)
+        finally:
+            self._responses.put(None)
+
+    def _read_stderr(self) -> None:
+        assert self._process.stderr is not None
+        for line in self._process.stderr:
+            self._stderr_lines.append(line.rstrip())
+
+    def _last_error(self) -> str:
+        return "\n".join(self._stderr_lines)[-2000:]
+
+    def request(self, payload: dict[str, Any], timeout_seconds: int) -> dict[str, Any]:
+        timeout = max(1, min(int(timeout_seconds), 120))
+        with self._lock:
+            if not self.alive:
+                raise RuntimeError(self._last_error() or "Plugin worker is not running")
+            assert self._process.stdin is not None
+            try:
+                self._process.stdin.write(json.dumps(payload, separators=(",", ":")) + "\n")
+                self._process.stdin.flush()
+            except (BrokenPipeError, OSError) as exc:
+                raise RuntimeError(self._last_error() or "Plugin worker pipe closed") from exc
+
+            try:
+                line = self._responses.get(timeout=timeout)
+            except queue.Empty as exc:
+                self.close()
+                raise TimeoutError(f"Plugin timed out after {timeout_seconds} seconds") from exc
+
+            if line is None:
+                raise RuntimeError(self._last_error() or "Plugin worker exited")
+            try:
+                response = json.loads(line)
+            except json.JSONDecodeError as exc:
+                raise RuntimeError("Plugin worker returned invalid JSON") from exc
+            if not isinstance(response, dict):
+                raise RuntimeError("Plugin worker response must be an object")
+            if not response.get("ok"):
+                raise RuntimeError(str(response.get("error") or "Plugin worker failed")[-2000:])
+            result = response.get("result")
+            if not isinstance(result, dict):
+                raise RuntimeError("Plugin render() must return a dictionary")
+            return result
+
+    def close(self) -> None:
+        process = self._process
+        if process.poll() is not None:
+            return
+        try:
+            if process.stdin is not None:
+                process.stdin.close()
+            process.wait(timeout=2)
+        except (OSError, subprocess.TimeoutExpired):
+            process.terminate()
+            try:
+                process.wait(timeout=2)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait(timeout=2)
+
+
+_WORKERS: dict[tuple[str, str, int, tuple[str, ...], str], _PersistentPluginWorker] = {}
+_WORKERS_LOCK = threading.Lock()
+
+
+def _worker_environment(
+    plugin: dict[str, Any],
+    secret_refs: dict[str, str],
+) -> dict[str, str]:
+    environment = {
+        "PATH": os.getenv("PATH", ""),
+        "PYTHONIOENCODING": "utf-8",
+        "PYTHONUNBUFFERED": "1",
+        "HOME": os.getenv("HOME", str(ROOT_DIR)),
+        "TEMP": os.getenv("TEMP", os.getenv("TMP", "/tmp")),
+    }
+    environment.update(_secret_environment(plugin, secret_refs))
+    return environment
+
+
+def _run_one_shot_worker(
+    *,
+    payload: dict[str, Any],
+    plugin_root: Path,
+    environment: dict[str, str],
+    timeout_seconds: int,
+) -> dict[str, Any]:
+    worker_script = ROOT_DIR / "app" / "plugin_worker.py"
+    try:
+        completed = subprocess.run(
+            [sys.executable, "-I", str(worker_script)],
+            input=json.dumps(payload),
+            text=True,
+            capture_output=True,
+            timeout=max(1, min(int(timeout_seconds), 120)),
+            env=environment,
+            cwd=str(plugin_root),
+            check=False,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise TimeoutError(f"Plugin timed out after {timeout_seconds} seconds") from exc
+    if completed.returncode != 0:
+        message = completed.stderr.strip() or completed.stdout.strip() or "Plugin worker failed"
+        raise RuntimeError(message[-2000:])
+    try:
+        result = json.loads(completed.stdout)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError("Plugin returned invalid JSON") from exc
+    if not isinstance(result, dict):
+        raise RuntimeError("Plugin render() must return a dictionary")
+    return result
+
+
+def _environment_fingerprint(environment: dict[str, str]) -> str:
+    secret_values = {
+        key: value
+        for key, value in environment.items()
+        if key.startswith("DASHBOARD_MATRIX_SECRET_")
+    }
+    serialized = json.dumps(secret_values, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
+
+
+def _get_persistent_worker(
+    *,
+    plugin_id: str,
+    module_path: Path,
+    plugin_root: Path,
+    approvals: list[str],
+    environment: dict[str, str],
+) -> _PersistentPluginWorker:
+    module_mtime = module_path.stat().st_mtime_ns
+    key = (
+        plugin_id,
+        str(module_path),
+        module_mtime,
+        tuple(sorted(approvals)),
+        _environment_fingerprint(environment),
+    )
+    stale_workers: list[_PersistentPluginWorker] = []
+    with _WORKERS_LOCK:
+        worker = _WORKERS.get(key)
+        if worker is not None and worker.alive:
+            return worker
+        if worker is not None:
+            _WORKERS.pop(key, None)
+            stale_workers.append(worker)
+
+        # A permission, secret, or source-code change must replace the old
+        # process so it cannot retain stale credentials or plugin state.
+        for old_key, old_worker in list(_WORKERS.items()):
+            if old_key[0] == plugin_id and old_key[1] == str(module_path):
+                _WORKERS.pop(old_key, None)
+                stale_workers.append(old_worker)
+
+        worker_script = ROOT_DIR / "app" / "plugin_worker.py"
+        worker = _PersistentPluginWorker(
+            worker_script=worker_script,
+            plugin_root=plugin_root,
+            environment=environment,
+        )
+        _WORKERS[key] = worker
+
+    for stale in stale_workers:
+        stale.close()
+    return worker
+
+
+def shutdown_plugin_workers() -> None:
+    with _WORKERS_LOCK:
+        workers = list(_WORKERS.values())
+        _WORKERS.clear()
+    for worker in workers:
+        worker.close()
+
+
+atexit.register(shutdown_plugin_workers)
+
+
 def run_plugin_widget(
     plugin_id: str,
     widget_id: str,
@@ -159,7 +386,6 @@ def run_plugin_widget(
     )
     if not widget:
         raise KeyError(f"Unknown widget {widget_id}")
-
     approvals = [
         permission
         for permission in (approvals or [])
@@ -171,7 +397,6 @@ def run_plugin_widget(
         raise PermissionError(
             "Plugin permissions have not been approved: " + ", ".join(missing)
         )
-
     module_path = Path(plugin["_path"]) / str(widget.get("module", "plugin.py"))
     plugin_root = Path(plugin["_path"]).resolve()
     resolved_module = module_path.resolve()
@@ -187,37 +412,20 @@ def run_plugin_widget(
         "station": station,
         "approvals": approvals,
     }
-    worker = ROOT_DIR / "app" / "plugin_worker.py"
-    environment = {
-        "PATH": os.getenv("PATH", ""),
-        "PYTHONIOENCODING": "utf-8",
-        "PYTHONUNBUFFERED": "1",
-        "HOME": os.getenv("HOME", str(ROOT_DIR)),
-        "TEMP": os.getenv("TEMP", os.getenv("TMP", "/tmp")),
-    }
-    environment.update(_secret_environment(plugin, secret_refs or {}))
-
-    try:
-        completed = subprocess.run(
-            [sys.executable, "-I", str(worker)],
-            input=json.dumps(payload),
-            text=True,
-            capture_output=True,
-            timeout=max(1, min(int(timeout_seconds), 120)),
-            env=environment,
-            cwd=str(plugin_root),
-            check=False,
+    environment = _worker_environment(plugin, secret_refs or {})
+    if not bool(plugin.get("persistent_worker", False)):
+        return _run_one_shot_worker(
+            payload=payload,
+            plugin_root=plugin_root,
+            environment=environment,
+            timeout_seconds=timeout_seconds,
         )
-    except subprocess.TimeoutExpired as exc:
-        raise TimeoutError(f"Plugin timed out after {timeout_seconds} seconds") from exc
 
-    if completed.returncode != 0:
-        message = completed.stderr.strip() or completed.stdout.strip() or "Plugin worker failed"
-        raise RuntimeError(message[-2000:])
-    try:
-        result = json.loads(completed.stdout)
-    except json.JSONDecodeError as exc:
-        raise RuntimeError("Plugin returned invalid JSON") from exc
-    if not isinstance(result, dict):
-        raise RuntimeError("Plugin render() must return a dictionary")
-    return result
+    worker = _get_persistent_worker(
+        plugin_id=plugin_id,
+        module_path=resolved_module,
+        plugin_root=plugin_root,
+        approvals=approvals,
+        environment=environment,
+    )
+    return worker.request(payload, timeout_seconds)

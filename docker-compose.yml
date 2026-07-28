@@ -1,11 +1,15 @@
 services:
   dashboard-matrix:
-    build: .
+    build:
+      context: .
+      args:
+        DASHBOARD_MATRIX_INSTALL_ICOM_IP: ${DASHBOARD_MATRIX_INSTALL_ICOM_IP:-0}
     ports:
       - "8080:8080"
     environment:
       DASHBOARD_MATRIX_ADMIN_PASSWORD: ${DASHBOARD_MATRIX_ADMIN_PASSWORD:-admin}
       DASHBOARD_MATRIX_SESSION_SECRET: ${DASHBOARD_MATRIX_SESSION_SECRET:-change-this-before-public-use}
+      ICOM_705_REMOTE_PASSWORD: ${ICOM_705_REMOTE_PASSWORD:-}
     volumes:
       - dashboard-matrix-data:/var/lib/dashboard-matrix
     restart: unless-stopped

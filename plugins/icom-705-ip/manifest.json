@@ -1,0 +1,123 @@
+{
+  "id": "icom-705-ip",
+  "name": "Icom IC-705 over IP",
+  "version": "0.1.0",
+  "author": "Dashboard Matrix Project",
+  "description": "Direct, shared LAN polling of an Icom IC-705 over its built-in Wi-Fi Remote control interface. No serial port or rigctld process is required.",
+  "persistent_worker": true,
+  "settings_schema": {
+    "type": "object",
+    "properties": {
+      "host": {
+        "type": "string",
+        "title": "Radio IP or hostname",
+        "default": "ic-705.local"
+      },
+      "username": {
+        "type": "string",
+        "title": "Remote username",
+        "default": ""
+      },
+      "control_port": {
+        "type": "integer",
+        "title": "Control UDP port",
+        "default": 50001,
+        "minimum": 1,
+        "maximum": 65535
+      },
+      "radio_address": {
+        "type": "string",
+        "title": "CI-V address",
+        "default": "0xA4"
+      },
+      "poll_interval": {
+        "type": "number",
+        "title": "Poll interval in seconds",
+        "default": 1.5,
+        "minimum": 0.5,
+        "maximum": 30
+      },
+      "command_timeout": {
+        "type": "number",
+        "title": "Command timeout in seconds",
+        "default": 2.0,
+        "minimum": 0.5,
+        "maximum": 15
+      },
+      "reconnect_delay": {
+        "type": "number",
+        "title": "Reconnect delay in seconds",
+        "default": 3.0,
+        "minimum": 1,
+        "maximum": 60
+      },
+      "stale_after": {
+        "type": "number",
+        "title": "Stale-data warning after seconds",
+        "default": 8.0,
+        "minimum": 2,
+        "maximum": 120
+      },
+      "max_watts": {
+        "type": "number",
+        "title": "Maximum RF output for watt estimate",
+        "default": 10.0,
+        "minimum": 1,
+        "maximum": 20
+      }
+    },
+    "required": [
+      "host",
+      "username"
+    ]
+  },
+  "widgets": [
+    {
+      "id": "radio-compact",
+      "name": "IC-705 Compact",
+      "description": "Frequency, mode, VFO and connection state",
+      "module": "plugin.py",
+      "default_width": 2,
+      "default_height": 1,
+      "refresh_seconds": 1
+    },
+    {
+      "id": "radio-status",
+      "name": "IC-705 Radio Status",
+      "description": "Frequency, mode, TX/RX state, power, volume, microphone gain and squelch",
+      "module": "plugin.py",
+      "default_width": 2,
+      "default_height": 2,
+      "refresh_seconds": 1
+    },
+    {
+      "id": "radio-meters",
+      "name": "IC-705 Meters",
+      "description": "Signal, SWR, output, ALC and supply meters",
+      "module": "plugin.py",
+      "default_width": 2,
+      "default_height": 2,
+      "refresh_seconds": 1
+    },
+    {
+      "id": "connection-health",
+      "name": "IC-705 Connection Health",
+      "description": "Remote endpoint, connection state, poll latency and last update",
+      "module": "plugin.py",
+      "default_width": 2,
+      "default_height": 1,
+      "refresh_seconds": 2
+    }
+  ],
+  "permissions": [
+    "local-network",
+    "secrets"
+  ],
+  "secrets": [
+    {
+      "name": "password",
+      "description": "Password configured under the IC-705 WLAN Remote settings",
+      "required": true
+    }
+  ]
+}
