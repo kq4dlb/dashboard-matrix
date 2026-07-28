@@ -459,7 +459,13 @@
         <fieldset class="plugin-secrets"><legend>Secret mappings</legend>
           ${secrets.length ? secrets.map((secret) => `<label>${escHtml(secret.name)}${secret.required ? " (required)" : ""}<input class="plugin-secret-ref" data-secret="${escHtml(secret.name)}" value="${escHtml((plugin.secret_refs || {})[secret.name] || "")}" placeholder="Environment variable name"><small>${escHtml(secret.description || "")}${plugin.secret_status?.[secret.name] ? " · configured" : " · not available"}</small></label>`).join("") : '<p class="help">This plugin declares no secrets.</p>'}
         </fieldset>
-        <p class="help">${plugin.runtime_ready ? "Permissions and required secrets are ready." : "Approve every declared permission and configure required secret environment variables before the plugin can run."}</p>
+        <p class="help">${
+          !plugin.permission_ready
+            ? "Approve every declared permission before adding cards."
+            : plugin.required_secrets_ready
+              ? "Permissions and required secrets are ready."
+              : "Settings and permissions are saved. Cards can be added, but this plugin cannot connect until its required secret environment variables are available to the running Dashboard Matrix process."
+        }</p>
       `;
       const actions = documentCreate("div");
       actions.className = "catalog-card-actions";
@@ -470,7 +476,10 @@
       for (const widget of plugin.widgets) {
         const button = documentCreate("button");
         button.textContent = `Add ${widget.name}`;
-        button.disabled = !plugin.enabled || !plugin.runtime_ready;
+        button.disabled = !plugin.enabled || !plugin.permission_ready;
+        if (!plugin.required_secrets_ready) {
+          button.title = "Card can be added now, but it will show a configuration error until the required secret is available.";
+        }
         button.onclick = () => addPluginWidget(plugin.id, widget.id, button);
         actions.append(button);
       }
@@ -505,7 +514,9 @@
         secret_refs: secretRefs,
       }),
     });
-    message.textContent = response.ok ? "Plugin saved." : `Save failed: ${await response.text()}`;
+    message.textContent = response.ok
+      ? "Plugin saved. Add-card buttons require the plugin to be enabled and all declared permissions approved; missing secrets affect card runtime only."
+      : `Save failed: ${await response.text()}`;
     if (response.ok) await loadPlugins();
   };
 

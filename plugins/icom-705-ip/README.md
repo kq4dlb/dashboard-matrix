@@ -37,13 +37,56 @@ docker compose build --no-cache
 docker compose up -d
 ```
 
-In **Admin → Plugins**:
+In **Admin → Extensions → Plugin SDK and installed plugins**:
 
 1. Enable **Icom IC-705 over IP**.
-2. Approve `local-network` and `secrets`.
-3. Set the host, Remote username, control port, and CI-V address.
+2. Approve both **Local network access** and **Use mapped secrets**.
+3. Paste the radio configuration into **Shared settings JSON**.
 4. Map the plugin's `password` secret to `ICOM_705_REMOTE_PASSWORD` (or another environment variable containing the IC-705 Remote password).
-5. Add one or more IC-705 cards to a dashboard.
+5. Select **Save plugin**.
+6. Add one or more IC-705 cards to a dashboard.
+
+Example shared settings:
+
+```json
+{
+  "host": "192.168.1.125",
+  "username": "KQ4DLB",
+  "control_port": 50001,
+  "radio_address": "0xA4",
+  "poll_interval": 1.5,
+  "command_timeout": 2.0,
+  "reconnect_delay": 3.0,
+  "stale_after": 8.0,
+  "max_watts": 10
+}
+```
+
+The password is not placed in this JSON. It remains in the environment variable referenced by the secret mapping.
+
+### When the Add card buttons remain disabled
+
+The original beta admin screen tied the Add card buttons to full runtime readiness. That meant a saved configuration could still look unsaved when the password variable was not visible inside the currently running container. Apply the accompanying admin hotfix so cards require only an enabled plugin and approved permissions; missing credentials then appear as a clear runtime message on the card.
+
+After changing `.env`, recreate the container so the environment is reloaded:
+
+```bash
+docker compose up -d --build --force-recreate
+```
+
+Verify that the password exists inside the container without printing it:
+
+```bash
+docker compose exec dashboard-matrix sh -lc 'test -n "$ICOM_705_REMOTE_PASSWORD" && echo configured || echo missing'
+```
+
+Inspect the plugin readiness flags:
+
+```bash
+curl -s http://127.0.0.1:8080/api/plugins | jq '.[] | select(.id == "icom-705-ip") | {enabled, settings, approvals, secret_refs, secret_status, permission_ready, required_secrets_ready, runtime_ready}'
+```
+
+Expected values after complete configuration are `enabled: true`, both approvals present, `password: true` under `secret_status`, and all three readiness flags set to `true`.
 
 This plugin opts into a persistent worker, so all cards backed by `plugin.py` share one long-lived worker and one background radio connection. Other plugins keep the existing one-process-per-render behavior unless they explicitly opt in. Card refreshes only read the latest cached snapshot.
 
