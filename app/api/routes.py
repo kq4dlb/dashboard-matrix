@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import json, platform, shutil, time
+import json, platform, shutil, time, asyncio
 from datetime import datetime, timezone
 from pathlib import Path
 from app.paths import data_dir, user_plugins_dir
@@ -378,10 +378,19 @@ async def plugin_widget_data(tile_id:int)->dict:
     secret_refs=json.loads(state["secret_refs_json"] or "{}") if state else {}
     merged=plugin_settings | dict(cfg.get("settings") or {})
     try:
-        return run_plugin_widget(
-            pid,wid,merged,station_context(station),
-            approvals=approvals,secret_refs=secret_refs,
-            timeout_seconds=int(cfg.get("timeout_seconds",20)),
+        timeout_seconds = max(
+            2,
+              min(int(cfg.get("timeout_seconds", 8)), 30),
+        )
+        return await asyncio.to_thread(
+            run_plugin_widget,
+            pid,
+            wid,
+            merged,
+            station_context(station),
+            approvals=approvals,
+            secret_refs=secret_refs,
+            timeout_seconds=timeout_seconds,
         )
     except FileNotFoundError as exc: raise HTTPException(404,str(exc))
     except (KeyError,PermissionError) as exc: raise HTTPException(400,str(exc))
