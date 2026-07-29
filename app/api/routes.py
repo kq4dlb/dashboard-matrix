@@ -354,8 +354,7 @@ async def add_plugin_widget(plugin_id:str,item:PluginWidgetAdd,_:None=Depends(re
         secret_refs=json.loads(state["secret_refs_json"] or "{}") if state else {}
         readiness=public_plugin(plugin, True, {}, approvals, secret_refs)
         if not readiness["permission_ready"]:
-            raise HTTPException(409,"Approve all declared plugin permissions before adding its cards")
-        cur=conn.execute("INSERT INTO tiles(dashboard_id,title,tile_type,sources_json,row_pos,col_pos,width,height,refresh_seconds,rotate_seconds,enabled,settings_json) VALUES(?,?,?,?,?,?,?,?,?,?,1,?)",(item.dashboard_id,widget.get("name",item.widget_id),"plugin","[]",item.row_pos,item.col_pos,int(widget.get("default_width",1)),int(widget.get("default_height",1)),int(widget.get("refresh_seconds",300)),0,json.dumps({"plugin":plugin_id,"widget":item.widget_id,"settings":{}})))
+            raise HTTPException(409,"Approve all declared plugin permissions before adding its cards")        cur=conn.execute("INSERT INTO tiles(dashboard_id,title,tile_type,sources_json,row_pos,col_pos,width,height,refresh_seconds,rotate_seconds,enabled,settings_json) VALUES(?,?,?,?,?,?,?,?,?,?,1,?)",(item.dashboard_id,widget.get("name",item.widget_id),"plugin","[]",item.row_pos,item.col_pos,int(widget.get("default_width",1)),int(widget.get("default_height",1)),int(widget.get("refresh_seconds",300)),0,json.dumps({"plugin":plugin_id,"widget":item.widget_id,"settings":{}})))
         row=conn.execute("SELECT * FROM tiles WHERE id=?",(cur.lastrowid,)).fetchone()
     await manager.broadcast({"event":"configuration_changed"})
     return row_to_dict(row)

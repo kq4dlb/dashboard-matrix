@@ -92,7 +92,7 @@ class FakeRadio:
         return 100
 
 
-def _load_plugin(monkeypatch):
+def _load_plugin(monkeypatch, *, env_password: str | None = "radio-password"):
     calls = {"create": 0}
 
     def create_radio(config):
@@ -103,7 +103,10 @@ def _load_plugin(monkeypatch):
     fake_rigplane.LanBackendConfig = FakeLanBackendConfig
     fake_rigplane.create_radio = create_radio
     monkeypatch.setitem(sys.modules, "rigplane", fake_rigplane)
-    monkeypatch.setenv("DASHBOARD_MATRIX_SECRET_PASSWORD", "radio-password")
+    if env_password is None:
+        monkeypatch.delenv("DASHBOARD_MATRIX_SECRET_PASSWORD", raising=False)
+    else:
+        monkeypatch.setenv("DASHBOARD_MATRIX_SECRET_PASSWORD", env_password)
 
     plugin_path = (
         Path(__file__).resolve().parents[1]
@@ -146,4 +149,30 @@ def test_cards_share_one_background_radio_connection(monkeypatch):
     assert status_metrics["Mode"] == "USB-D"
     assert health_metrics["Connection"] == "Connected"
     assert calls["create"] == 1
+    plugin.shutdown()
+
+
+def test_admin_password_works_without_environment_secret(monkeypatch):
+    plugin, _ = _load_plugin(monkeypatch, env_password=None)
+    config = plugin.RadioConfig.from_settings(
+        {
+            "host": "192.0.2.70",
+            "username": "dashboard",
+            "password": "admin-stored-password",
+        }
+    )
+    assert config.password == "admin-stored-password"
+    plugin.shutdown()
+
+
+def test_environment_secret_remains_supported(monkeypatch):
+    plugin, _ = _load_plugin(monkeypatch, env_password="environment-password")
+    config = plugin.RadioConfig.from_settings(
+        {
+            "host": "192.0.2.70",
+            "username": "dashboard",
+            "password": "",
+        }
+    )
+    assert config.password == "environment-password"
     plugin.shutdown()
