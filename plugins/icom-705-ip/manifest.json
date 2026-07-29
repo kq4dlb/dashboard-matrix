@@ -1,7 +1,7 @@
 {
   "id": "icom-705-ip",
   "name": "Icom IC-705 over IP",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "author": "Dashboard Matrix Project",
   "description": "Direct, shared LAN polling of an Icom IC-705 over its built-in Wi-Fi Remote control interface. No serial port or rigctld process is required.",
   "persistent_worker": true,
@@ -17,13 +17,6 @@
         "type": "string",
         "title": "Remote username",
         "default": ""
-      },
-      "password": {
-        "type": "string",
-        "title": "Remote password",
-        "description": "Optional Admin-stored password. Leave blank to use the mapped environment secret.",
-        "default": "",
-        "format": "password"
       },
       "control_port": {
         "type": "integer",
@@ -123,8 +116,8 @@
   "secrets": [
     {
       "name": "password",
-      "description": "Optional environment-variable alternative to the Admin-stored Remote password",
-      "required": false
+      "description": "IC-705 WLAN Remote password. Map an environment variable name or file:/absolute/path.",
+      "required": true
     }
   ]
 }

@@ -1,57 +1,44 @@
 # Icom IC-705 over IP plugin
 
-This plugin connects directly to the IC-705 Remote control service over Wi-Fi. It does not use a serial device and does not require Hamlib `rigctld`.
+This plugin connects directly to the IC-705 WLAN Remote service. It does not use a serial device and does not require Hamlib `rigctld`.
 
 ## Radio setup
 
-On the IC-705, configure the WLAN Remote settings:
+On the IC-705:
 
-1. Enable **Network Control**.
-2. Set the control UDP port to **50001**.
-3. Leave the serial and audio UDP ports at **50002** and **50003** unless your network design requires different values.
-4. Create or select a Remote username and password.
-5. Confirm the radio CI-V address is **A4**.
-6. Give the IC-705 a DHCP reservation or static address so the dashboard always finds the same radio.
+1. Enable **Network Control** under the WLAN Remote settings.
+2. Configure a Remote username and password.
+3. Use control UDP port `50001` unless you deliberately changed it.
+4. Confirm the CI-V address is `A4`.
+5. Give the radio a DHCP reservation or static address.
 
-Only the control port is entered in the plugin. RigPlane negotiates the remaining UDP streams with the radio.
+## Linux dependency
 
-## Dashboard setup
-
-Install the optional dependency from the Dashboard Matrix repository:
+RigPlane requires Python 3.11 or newer. Install it into the same virtual environment used to start Dashboard Matrix:
 
 ```bash
-python -m pip install -e '.[icom-ip]'
+sudo apt-get update
+sudo apt-get install -y libopus0 libportaudio2
+/opt/dashboard-matrix/.venv/bin/pip install 'rigplane>=2.11,<3.0'
 ```
 
-RigPlane requires Python 3.11 or newer.
+For a source installation, replace `/opt/dashboard-matrix/.venv/bin/pip` with the virtual environment used by your startup script.
 
-For Docker Compose, add these values to `.env`, then rebuild the image:
+## Admin configuration
 
-```dotenv
-DASHBOARD_MATRIX_INSTALL_ICOM_IP=1
-ICOM_705_REMOTE_PASSWORD=replace-with-the-radio-password
-```
+Open **Admin → Extensions → Plugin SDK and installed plugins → Icom IC-705 over IP**.
 
-```bash
-docker compose build --no-cache
-docker compose up -d
-```
+Enable the plugin and approve:
 
-In **Admin → Plugins**:
+- `local-network`
+- `secrets`
 
-1. Enable **Icom IC-705 over IP**.
-2. Approve `local-network` and `secrets`.
-3. Set the host, Remote username, Remote password, control port, and CI-V address in Shared settings JSON.
-4. Alternatively, leave the Admin password blank and map the optional `password` secret to `ICOM_705_REMOTE_PASSWORD` (or another environment variable containing the IC-705 Remote password).
-5. Add one or more IC-705 cards to a dashboard.
-
-Example Shared settings JSON for a regular Linux installation:
+Paste this into **Shared settings JSON**:
 
 ```json
 {
   "host": "192.168.1.125",
   "username": "KQ4DLB",
-  "password": "replace-with-the-radio-password",
   "control_port": 50001,
   "radio_address": "0xA4",
   "poll_interval": 1.5,
@@ -62,13 +49,60 @@ Example Shared settings JSON for a regular Linux installation:
 }
 ```
 
-The Admin-stored password is saved in the Dashboard Matrix SQLite database as part of the plugin settings. Use the environment-secret mapping instead when you do not want the radio password stored in SQLite.
+The IP address and username are stored in the Dashboard Matrix SQLite database. The actual radio password is kept outside SQLite.
 
-This plugin opts into a persistent worker, so all cards backed by `plugin.py` share one long-lived worker and one background radio connection. Other plugins keep the existing one-process-per-render behavior unless they explicitly opt in. Card refreshes only read the latest cached snapshot.
+## Password mapping options
+
+In the Admin **Secret mappings** section, map `password` using one of these methods.
+
+### Option A: environment variable
+
+Enter this in the Admin mapping field:
+
+```text
+ICOM_705_REMOTE_PASSWORD
+```
+
+The full-sync plugin manager resolves that variable from:
+
+1. The running Dashboard Matrix process environment.
+2. The file named by `DASHBOARD_MATRIX_ENV_FILE`.
+3. `/etc/dashboard-matrix.env`.
+4. `.env` in the Dashboard Matrix application directory.
+5. `dashboard-matrix.env` in the application directory.
+
+Example `/etc/dashboard-matrix.env` entry:
+
+```dotenv
+ICOM_705_REMOTE_PASSWORD='replace-with-radio-password'
+```
+
+### Option B: password file
+
+Create a password file readable by the Dashboard Matrix process:
+
+```bash
+sudo install -d -m 0750 -o dashboard-matrix -g dashboard-matrix /var/lib/dashboard-matrix/secrets
+printf '%s' 'replace-with-radio-password' | sudo tee /var/lib/dashboard-matrix/secrets/icom705-password >/dev/null
+sudo chown dashboard-matrix:dashboard-matrix /var/lib/dashboard-matrix/secrets/icom705-password
+sudo chmod 0600 /var/lib/dashboard-matrix/secrets/icom705-password
+```
+
+Enter this in the Admin mapping field:
+
+```text
+file:/var/lib/dashboard-matrix/secrets/icom705-password
+```
+
+The password-file method works with systemd and custom startup scripts because the plugin manager reads the file directly before launching the isolated plugin worker.
+
+## Shared polling
+
+The plugin uses one persistent worker and one background radio connection. Every IC-705 card reads the same cached snapshot, so separate cards do not compete for the radio connection.
 
 ## First-release behavior
 
 - Read-only radio monitoring.
-- Automatic reconnect after Wi-Fi or radio restarts.
+- Automatic reconnect after radio or Wi-Fi interruptions.
 - Settings changes restart only the IC-705 connection.
-- RF wattage is an estimate based on the configured maximum output. Use `10` watts for external DC operation or `5` watts when that is the radio's available maximum.
+- RF wattage is estimated from the configured maximum output.

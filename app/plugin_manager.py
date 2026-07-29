@@ -6,6 +6,7 @@ import json
 import os
 import queue
 import re
+import shlex
 import subprocess
 import sys
 import threading
@@ -18,6 +19,7 @@ from app.paths import ROOT_DIR, user_plugins_dir
 PLUGIN_DIRS = [ROOT_DIR / "plugins", user_plugins_dir()]
 PLUGIN_ID = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 SECRET_NAME = re.compile(r"^[a-zA-Z][a-zA-Z0-9_-]*$")
+ENV_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 ALLOWED_PERMISSIONS = {
     "network",
     "local-network",
@@ -26,6 +28,84 @@ ALLOWED_PERMISSIONS = {
     "subprocess",
     "secrets",
 }
+
+
+def _parse_env_file(path: Path) -> dict[str, str]:
+    """Read simple KEY=value entries without executing shell code."""
+    values: dict[str, str] = {}
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except (OSError, UnicodeError):
+        return values
+
+    for raw_line in lines:
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("export "):
+            line = line[7:].lstrip()
+        if "=" not in line:
+            continue
+        name, raw_value = line.split("=", 1)
+        name = name.strip()
+        if not ENV_NAME.fullmatch(name):
+            continue
+        try:
+            lexer = shlex.shlex(raw_value, posix=True)
+            lexer.whitespace_split = True
+            lexer.commenters = "#"
+            tokens = list(lexer)
+        except ValueError:
+            continue
+        values[name] = " ".join(tokens) if tokens else ""
+    return values
+
+
+def _candidate_env_files() -> list[Path]:
+    candidates: list[Path] = []
+    explicit = os.getenv("DASHBOARD_MATRIX_ENV_FILE", "").strip()
+    if explicit:
+        candidates.append(Path(explicit).expanduser())
+    candidates.extend(
+        [
+            Path("/etc/dashboard-matrix.env"),
+            ROOT_DIR / ".env",
+            ROOT_DIR / "dashboard-matrix.env",
+        ]
+    )
+    unique: list[Path] = []
+    seen: set[str] = set()
+    for candidate in candidates:
+        key = str(candidate)
+        if key not in seen:
+            seen.add(key)
+            unique.append(candidate)
+    return unique
+
+
+def _resolve_secret_reference(reference: str) -> str:
+    """Resolve an Admin secret mapping from env, env files, or file:PATH."""
+    reference = str(reference or "").strip()
+    if not reference:
+        return ""
+
+    if reference.startswith("file:"):
+        secret_path = Path(reference[5:].strip()).expanduser()
+        try:
+            return secret_path.read_text(encoding="utf-8").strip()
+        except (OSError, UnicodeError):
+            return ""
+
+    value = os.getenv(reference, "")
+    if value:
+        return value
+
+    if ENV_NAME.fullmatch(reference):
+        for env_file in _candidate_env_files():
+            value = _parse_env_file(env_file).get(reference, "")
+            if value:
+                return value
+    return ""
 
 
 def discover_plugins() -> list[dict[str, Any]]:
@@ -93,8 +173,7 @@ def public_plugin(
     permission_ready = set(required_permissions).issubset(set(approvals))
     secret_status = {
         secret["name"]: bool(
-            secret_refs.get(secret["name"])
-            and os.getenv(secret_refs[secret["name"]], "")
+            _resolve_secret_reference(secret_refs.get(secret["name"], ""))
         )
         for secret in plugin.get("secrets", [])
     }
@@ -127,7 +206,7 @@ def _secret_environment(
     for secret_name, env_name in secret_refs.items():
         if secret_name not in declared:
             continue
-        value = os.getenv(env_name, "")
+        value = _resolve_secret_reference(env_name)
         if value:
             normalized = re.sub(r"[^A-Z0-9_]", "_", secret_name.upper())
             environment[f"DASHBOARD_MATRIX_SECRET_{normalized}"] = value

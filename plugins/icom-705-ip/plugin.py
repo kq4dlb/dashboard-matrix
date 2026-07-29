@@ -44,18 +44,13 @@ class RadioConfig:
 
         host = str(settings.get("host", "ic-705.local")).strip()
         username = str(settings.get("username", "")).strip()
-        password = str(settings.get("password", "")).strip() or os.getenv(
-            "DASHBOARD_MATRIX_SECRET_PASSWORD", ""
-        )
+        password = os.getenv("DASHBOARD_MATRIX_SECRET_PASSWORD", "")
         if not host:
             raise ValueError("Radio IP or hostname is required")
         if not username:
             raise ValueError("Remote username is required")
         if not password:
-            raise ValueError(
-                "Remote password is required. Add it to Shared settings JSON "
-                "or map the optional password environment secret."
-            )
+            raise ValueError("Remote password is unavailable. In Admin, map password to ICOM_705_REMOTE_PASSWORD or file:/absolute/path/to/password.")
 
         return cls(
             host=host,
